@@ -215,6 +215,7 @@ const CONFIG = {
 };
 /* ================================================== */
 
+const APP_VERSION = '2026-10-08c';
 let PENDING = null, NEWER = null, DEMO = false, S = null, TAB = 'home', RANK = 'streak', BUSY = false;
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -373,7 +374,9 @@ function renderHome() {
   } else {
     const accH = !isEgg && acc ? `<span class="acc">${isUrl(acc.img) ? `<img src="${esc(acc.img)}">` : esc(acc.symbol)}</span>` : '';
     const sadF = mood === 'sad' ? ';filter:saturate(.45)' : '';
-    const eggSt = (S.eggStages || []).filter(isUrl);
+    let eggSt = (S.eggStages || []).filter(isUrl);
+    const eggBase = S.eggImg || (isEgg ? p.img : '');
+    if (!eggSt.length && /egg\.png$/i.test(eggBase || '')) eggSt = [1, 2, 3, 4].map(i => eggBase.replace(/egg\.png$/i, 'egg_' + i + '.png'));
     const eggArt = isEgg && eggSt.length ? eggSt[Math.min(eggSt.length - 1, Math.round(p.progress * (eggSt.length - 1) / Math.max(1, p.need - 2)))] : '';
     const cls = ['pet', isEgg && !eggArt ? 'egg wob' + Math.min(4, p.progress) : '', mood === 'sad' ? 'sad' : ''].join(' ');
     stageInner = `<div class="petwrap">
@@ -715,6 +718,7 @@ function renderAdmin() {
     <div class="card"><h3>🙋 待核准島民 <small>${A.pending.length} 位</small></h3>
       ${A.pending.length ? A.pending.map(m => `<div class="place">${avatar(m.name, m.picture)}<div class="nm"><b>${esc(m.name)}</b></div><button class="btn ghost" onclick="approve('${esc(m.userId)}',false)">拒絕</button><button class="btn" onclick="approve('${esc(m.userId)}',true)">核准</button></div>`).join('') : '<div class="empty">目前沒有</div>'}
     </div>
+    <div class="sub center" style="margin-bottom:6px">小屋版本 ${APP_VERSION}・後台版本 ${esc(S.version || '舊版（請部署新版本）')}</div>
     <div class="sub center" style="margin-bottom:16px">其他規則（準時時間、孵化次數、物種圖片…）請到 Google 試算表的「設定」調整</div>`;
 }
 async function adminCall(action, payload, okMsg) {
