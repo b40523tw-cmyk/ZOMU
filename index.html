@@ -201,6 +201,7 @@ button{font-family:inherit;cursor:pointer}
     <option value="sad">難過</option>
     <option value="away">離家出走</option>
     <option value="capsule">太空膠囊（請假）</option>
+    <option value="grad">完全體（再 1 次畢業）</option>
     <option value="tree">卓木樹差一天完成</option>
     <option value="pending">等待核准</option>
   </select>
@@ -226,7 +227,7 @@ async function boot() {
   if (DEMO) { startDemo(); return; }
   try {
     await liff.init({ liffId: CONFIG.LIFF_ID });
-    if (!liff.isLoggedIn()) { liff.login({ redirectUri: location.href }); return; }
+    if (!liff.isLoggedIn()) { liff.login(); return; }
     const j = await api('state');
     if (!j.ok) throw new Error(j.error);
     S = j.state; render();
@@ -240,7 +241,7 @@ async function api(action, payload = {}) {
   const body = Object.assign({ action, idToken: liff.getIDToken() }, payload);
   const res = await fetch(CONFIG.GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
   const j = await res.json();
-  if (!j.ok && j.code === 'TOKEN_EXPIRED') { liff.logout(); liff.login({ redirectUri: location.href }); throw new Error('登入過期，重新登入中…'); }
+  if (!j.ok && j.code === 'TOKEN_EXPIRED') { liff.logout(); liff.login(); throw new Error('登入過期，重新登入中…'); }
   return j;
 }
 
@@ -289,7 +290,7 @@ let TICK = 0;
 setInterval(() => {
   TICK++;
   document.querySelectorAll('.spr[data-mode="anim"]').forEach(el => {
-    const n = el._frames || 1; if (n < 2) return;
+    const n = el._frames || 1; if (n < 2 || n > 3) return;   // 4 格以上是過程圖（例如蛋），不循環
     const seq = n === 2 ? [0, 0, 0, 1] : n === 3 ? [0, 0, 0, 0, 0, 1, 0, 2] : [0, 0, 0, ...Array.from({ length: n - 1 }, (_, i) => i + 1)];
     setFrame(el, seq[TICK % seq.length]);
   });
@@ -366,15 +367,19 @@ function renderHome() {
 
   let stageInner;
   if (mood === 'away') {
-    stageInner = `<div class="awaybox" onclick="say()"><div class="house">🏠</div><div class="note">📜</div></div>`;
+    stageInner = isUrl(S.awayImg)
+      ? `<div class="awaybox" onclick="say()">${art('🏠', S.awayImg, 190)}</div>`
+      : `<div class="awaybox" onclick="say()"><div class="house">🏠</div><div class="note">📜</div></div>`;
   } else {
     const accH = !isEgg && acc ? `<span class="acc">${isUrl(acc.img) ? `<img src="${esc(acc.img)}">` : esc(acc.symbol)}</span>` : '';
     const sadF = mood === 'sad' ? ';filter:saturate(.45)' : '';
-    const cls = ['pet', isEgg ? 'egg wob' + Math.min(4, p.progress) : '', mood === 'sad' ? 'sad' : ''].join(' ');
+    const eggSt = (S.eggStages || []).filter(isUrl);
+    const eggArt = isEgg && eggSt.length ? eggSt[Math.min(eggSt.length - 1, Math.round(p.progress * (eggSt.length - 1) / Math.max(1, p.need - 2)))] : '';
+    const cls = ['pet', isEgg && !eggArt ? 'egg wob' + Math.min(4, p.progress) : '', mood === 'sad' ? 'sad' : ''].join(' ');
     stageInner = `<div class="petwrap">
       ${mood === 'capsule' ? '<div class="capsule"></div>' : ''}
       <div id="pet" class="${cls}" style="font-size:${size}px${sadF}" onclick="poke()">
-        <span class="body">${petGlyph(p.emoji, p.img, p.hue, size)}</span>${isEgg ? crackSVG(Math.min(4, p.progress)) : ''}${accH}<div class="shadow"></div>
+        <span class="body">${eggArt ? art('🥚', eggArt, size + 40) : isEgg && isUrl(p.img) ? art('🥚', p.img, size + 40, { mode: 'still', frame: Math.min(3, Math.round(p.progress * 3 / Math.max(1, p.need - 2))) }) : petGlyph(p.emoji, p.img, p.hue, size)}</span>${isEgg && !isUrl(p.img) ? crackSVG(Math.min(4, p.progress)) : ''}${accH}<div class="shadow"></div>
       </div>
       ${mood === 'capsule' ? '<div class="zz">💤</div>' : ''}${mood === 'hungry' || mood === 'sad' ? '<div class="sweat">💧</div>' : ''}
     </div>`;
@@ -525,8 +530,20 @@ async function playEvents(evs) {
       flash(); confetti(24);
       await modal(`<div class="big popin">${petGlyph(e.pet.emoji, e.pet.img, e.pet.hue, 130)}</div><h2>✨ 進化了！</h2><p>${esc(e.pet.name || e.pet.speciesName)} 從「${esc(e.from)}」進化成「${esc(e.to)}」！<br>下一次進化還要 ${e.pet.need} 次準時。</p><button class="btn full" data-close="1">太棒了</button>`);
     } else if (e.type === 'graduate') {
-      confetti(50);
-      await modal(`<div class="big popin">🎓</div><h2>${esc(e.pet.name || e.pet.speciesName)} 畢業了！</h2><p>牠已經完全長大，會一直住在你的小屋裡。<br>你得到了一顆新的蛋 🥚</p><button class="btn full" data-close="1">繼續養下一隻</button>`);
+      const gimg = e.pet.graduateImg || '';
+      const nm = esc(e.pet.name || e.pet.speciesName);
+      const done = modal(`<div class="story" style="height:240px">${isUrl(gimg) ? `<span class="spr" id="gradArt" data-src="${esc(gimg)}" data-mode="still" data-frame="0" style="width:230px;height:230px;transition:opacity .35s"></span>` : '<div class="big popin">🎓</div>'}</div>
+        <h2 id="gradT">${nm} 長大了！</h2><p id="gradP">牠抱著一顆蛋，好像有話想說…</p>
+        <button class="btn full" data-close="1" id="gradBtn" style="visibility:hidden">繼續養下一隻</button>`);
+      const steps = [[`${nm} 要畢業了！`, '牠把這顆蛋留給你，張開翅膀準備出發。'], [`${nm} 畢業了！`, '牠會一直住在你的小屋裡。<br>你得到了一顆新的蛋 🥚']];
+      for (let k = 0; k < 2; k++) {
+        await sleep(1500);
+        const el = $('#gradArt');
+        if (el) { el.style.opacity = 0; await sleep(300); setFrame(el, Math.min(k + 1, (el._frames || 1) - 1)); el.style.opacity = 1; }
+        $('#gradT').textContent = steps[k][0]; $('#gradP').innerHTML = steps[k][1];
+      }
+      confetti(50); $('#gradBtn').style.visibility = 'visible';
+      await done;
     } else if (e.type === 'item') {
       const done = modal(`<div class="big shake" id="gift">🎁</div><h2 id="giftT">${e.rare ? '稀有' : ''}獎勵！</h2><p>連續準時 ${e.streak} 次</p><button class="btn full" data-close="1" id="giftBtn" style="visibility:hidden">收下</button>`);
       await sleep(1100);
@@ -584,10 +601,17 @@ async function showTableStory(img, emoji) {
 }
 
 async function showHatch(pet) {
-  const p = modal(`<div class="big shake" id="hatchEgg">🥚</div><h2 id="hatchT">蛋在動了…！</h2><p id="hatchP">&nbsp;</p>
+  const egg = isUrl(S.eggImg) ? art('🥚', S.eggImg, 170, { mode: 'still', frame: Math.max(0, (S.rules.hatch || 5) - 2) }) : '🥚';
+  const p = modal(`<div class="big shake" id="hatchEgg">${egg}</div><h2 id="hatchT">蛋在動了…！</h2><p id="hatchP">&nbsp;</p>
     <div id="hatchName" style="display:none"><div class="field"><input id="petName" maxlength="10" placeholder="幫牠取個名字（可以之後再取）"></div>
     <button class="btn full" data-close="name">就這樣決定！</button></div>`);
-  await sleep(1600); flash(); confetti(46);
+  if (isUrl(S.eggImg)) {
+    await sleep(1000);
+    const el = $('#hatchEgg .spr');
+    if (el && el._frames > 1) { $('#hatchEgg').classList.remove('shake'); setFrame(el, el._frames - 1); $('#hatchT').textContent = '要出來了！'; }
+    await sleep(900);
+  } else await sleep(1600);
+  flash(); confetti(46);
   $('#hatchEgg').classList.remove('shake'); $('#hatchEgg').classList.add('popin');
   $('#hatchEgg').innerHTML = petGlyph(pet.emoji, pet.img, pet.hue, 130); hydrate($('#sheet'));
   $('#hatchT').innerHTML = `孵出了「${esc(pet.speciesName)}」！${pet.rarity === '稀有' ? ' <span class="tag rare">稀有</span>' : ''}`;
@@ -623,7 +647,7 @@ async function equip(code) {
 function renderTree() {
   if (!S || S.me.status !== '啟用') { $('#tab-tree').innerHTML = ''; return; }
   const t = S.tree, st = t.stages[t.stage] || { name: '', emoji: '🌳' }, last = t.stage >= t.stages.length - 1;
-  const size = [64, 84, 104, 124, 160, 172, 150][t.stage] || 150;
+  const size = isUrl(st.img) ? ([150, 170, 190, 220, 230, 230][t.stage] || 230) : ([64, 84, 104, 124, 160, 172, 150][t.stage] || 150);
   const notYet = S.team.filter(m => !m.fed && !m.leave), leaveN = S.team.filter(m => m.leave).length, fedN = S.team.filter(m => m.fed).length;
   let todayMsg;
   if (!S.today.workday) todayMsg = '今天是休息日 🌴';
@@ -721,11 +745,12 @@ const DEMO_ITEMS = [['acc_bow', '蝴蝶結', '🎀', '配件'], ['acc_hat', '紳
 const DEMO_TREE = [['種子', '🌰', '大家一起種下的種子'], ['嫩芽', '🌱', '冒出了第一片葉子'], ['幼苗', '🌿', '慢慢站穩了'], ['小樹', '🪴', '開始有樹的樣子了'], ['大樹', '🌳', '可以在樹下乘涼了'], ['結果', '🍊', '結出了果實'], ['卓木桌', '🪵', '樹的木頭做成了同一張桌——不同腦袋，同一張桌。']];
 const STAGES = ['蛋', '幼年', '成長', '成熟', '完全體'];
 
-const DEMO_IMG = { owl: { '幼年': 'images/owl_1.png', '成長': 'images/owl_2.png', '成熟': 'images/owl_3.png', '完全體': 'images/owl_4.png', '畢業': 'images/owl_4.png' } };
+const DEMO_IMG = { owl: { '幼年': 'images/owl_1.png', '成長': 'images/owl_2.png', '成熟': 'images/owl_3.png', '完全體': 'images/owl_4.png', '畢業': 'images/owl_4.png', grad: 'images/owl_grad.png' }, egg: 'images/egg.png' };
+const DEMO_TREE_IMG = ['images/tree_0.png', 'images/tree_1.png', 'images/tree_2.png', 'images/tree_3.png', 'images/tree_4.png', 'images/tree_5.png', 'images/zomu_table.png'];
 function demoPet(code, stage, progress, name = '', hue = 0) {
   const s = DEMO_SPECIES.find(x => x[0] === code) || ['', '', '🥚', ''];
-  const img = (DEMO_IMG[code] || {})[stage] || '';
-  return { id: 'P1', species: stage === '蛋' ? '' : code, speciesName: stage === '蛋' ? '' : s[1], rarity: s[3], intro: '和誰都處得來的佛系島民', emoji: stage === '蛋' ? '🥚' : s[2], img, hue, stage, progress, need: stage === '蛋' ? 5 : 20, total: 0, name, hatched: '', graduated: '' };
+  const img = stage === '蛋' ? DEMO_IMG.egg : ((DEMO_IMG[code] || {})[stage] || '');
+  return { id: 'P1', species: stage === '蛋' ? '' : code, speciesName: stage === '蛋' ? '' : s[1], rarity: s[3], intro: '和誰都處得來的佛系島民', emoji: stage === '蛋' ? '🥚' : s[2], img, hue, stage, progress, need: stage === '蛋' ? 5 : 20, total: 0, name, hatched: '', graduated: '', graduateImg: (DEMO_IMG[code] || {}).grad || '' };
 }
 function demoState(v) {
   const today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
@@ -737,10 +762,11 @@ function demoState(v) {
     today: { date: today, weekday: ['週日', '週一', '週二', '週三', '週四', '週五', '週六'][new Date(today + 'T12:00:00+08:00').getDay()], workday: true, deadline: '08:30', beforeDeadline: true },
     rules: { hatch: 5, evolve: 20, awayLimit: 3, homeNeed: 3, itemEvery: 5, rareAt: 20 },
     items: DEMO_ITEMS.map(([code, name, symbol, type]) => ({ code, name, symbol, type, img: '' })),
-    tree: { stage: 2, progress: 3, need: 5, total: 13, grewToday: false, stages: DEMO_TREE.map(([name, emoji, desc], i) => ({ name, emoji, img: i === 6 ? 'images/zomu_table.png' : '', desc })) },
+    tree: { stage: 2, progress: 3, need: 5, total: 13, grewToday: false, stages: DEMO_TREE.map(([name, emoji, desc], i) => ({ name, emoji, img: DEMO_TREE_IMG[i] || '', desc })) },
     team,
     dex: DEMO_SPECIES.map(([code, name, emoji, rarity]) => { const owners = { otter: ['阿堯'], fox: ['小美'], turtle: ['大熊'], owl: ['阿哲'], jelly: ['小魚'], capybara: ['阿堯'] }[code] || []; return { code, name, emoji, img: '', rarity, intro: '卓木島的島民', found: owners.length > 0, owners }; }),
     board: null,
+    awayImg: 'images/away.png', eggImg: DEMO_IMG.egg, eggStages: ['images/egg_1.png', 'images/egg_2.png', 'images/egg_3.png', 'images/egg_4.png'],
     admin: { places: [{ name: '公司', lat: 25.04123, lng: 121.56456, radius: 200, on: true }], pending: [{ userId: 'U9', name: '新朋友', picture: '' }], calendar: [] }
   };
   const me = st.me;
@@ -753,6 +779,7 @@ function demoState(v) {
   if (v === 'away') { me.away = true; me.miss = 3; me.streak = 0; me.homeProgress = 1; }
   if (v === 'capsule') me.leaveToday = true;
   if (v === 'pending') { me.status = '待核准'; st.admin = null; }
+  if (v === 'grad') st.pet = demoPet('owl', '完全體', 19, '咕咕博士');
   if (v === 'tree') { st.tree.stage = 5; st.tree.progress = 4; team[3].fed = true; }
   team[0].fed = me.fedToday; team[0].leave = me.leaveToday; team[0].away = me.away; team[0].petEmoji = st.pet.emoji;
   demoBoard(st);
@@ -786,7 +813,7 @@ function mockApi(action, p) {
       const pet = st.pet; ev.push({ type: 'feed' }); pet.progress++; pet.total++;
       if (pet.progress >= pet.need) {
         if (pet.stage === '蛋') {
-          const s = DEMO_SPECIES[Math.floor(Math.random() * DEMO_SPECIES.length)];
+          const s = DEMO_SPECIES.find(x => x[0] === 'owl');   // 示範模式固定孵出貓頭鷹
           Object.assign(pet, { species: s[0], speciesName: s[1], emoji: s[2], rarity: s[3], stage: '幼年', progress: 0, need: 20, hue: [0, 0, 30, 160, 280][Math.floor(Math.random() * 5)], intro: '剛剛孵化的新島民', img: (DEMO_IMG[s[0]] || {})['幼年'] || '' });
           ev.push({ type: 'hatch', pet: JSON.parse(JSON.stringify(pet)) });
           const d = st.dex.find(x => x.code === s[0]); if (d) { d.found = true; if (!d.owners.includes('阿堯')) d.owners.push('阿堯'); }
