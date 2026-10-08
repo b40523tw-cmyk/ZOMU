@@ -65,6 +65,28 @@ button{font-family:inherit;cursor:pointer}
 .awaybox .house{font-size:110px;line-height:1;filter:saturate(.7)}
 .awaybox .note{position:absolute;right:-26px;bottom:6px;font-size:36px;animation:flutter 3s ease-in-out infinite}
 @keyframes flutter{50%{transform:rotate(-12deg) translateY(-3px)}}
+.shiny .body{filter:drop-shadow(0 0 6px #FFE066) drop-shadow(0 0 14px rgba(255,214,102,.8))}
+.sparkle{position:absolute;font-size:18px;pointer-events:none;animation:twinkle 1.6s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:0;transform:scale(.5)}50%{opacity:1;transform:scale(1.1)}}
+.petwrap{transition:transform 1.4s ease-in-out}
+.pet .body{transition:transform .3s}
+.pet.spin{animation:spin .9s ease}
+@keyframes spin{to{transform:rotateY(360deg)}}
+.pet.wiggle{animation:wiggle .8s ease}
+@keyframes wiggle{20%{transform:rotate(-12deg)}40%{transform:rotate(10deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(5deg)}}
+.pet.dance{animation:dance 1.2s ease}
+@keyframes dance{0%,100%{transform:none}25%{transform:translateY(-14px) rotate(-8deg)}50%{transform:none}75%{transform:translateY(-14px) rotate(8deg)}}
+.rain{position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(105deg,transparent 0 14px,rgba(255,255,255,.55) 14px 15px,transparent 15px 30px);background-size:60px 60px;animation:rain .5s linear infinite;opacity:.6}
+@keyframes rain{to{background-position:-20px 60px}}
+.rainbow{position:absolute;left:50%;top:40px;width:300px;height:150px;transform:translateX(-50%);border-radius:150px 150px 0 0;background:radial-gradient(circle at 50% 100%,transparent 52%,#C77DFF 52% 56%,#4D96FF 56% 60%,#6BCB77 60% 64%,#FFD93D 64% 68%,#FF6B6B 68% 72%,transparent 72%);opacity:.5;pointer-events:none}
+.weather-cloudy .sun{opacity:.45}
+.weather-night{background:linear-gradient(#2B3A67,#5B6FA8 62%)!important}
+.weather-night .sun{background:#FFF5CC;box-shadow:0 0 20px 4px rgba(255,245,204,.5)}
+.leaf{position:absolute;top:-20px;font-size:18px;pointer-events:none;animation:leaf 6s linear infinite}
+@keyframes leaf{to{transform:translate(-120px,360px) rotate(360deg)}}
+.fortune{display:flex;gap:12px;align-items:center}
+.fortune .lot{font-size:22px;font-weight:900;color:#fff;background:linear-gradient(135deg,#E76F51,#F4A261);border-radius:14px;padding:10px 12px;min-width:64px;text-align:center}
+.fortune .txt{font-size:13px;line-height:1.7;color:var(--muted)}.fortune .txt b{color:var(--ink)}
 .bubble{position:absolute;left:50%;top:22px;transform:translateX(-50%);background:#fff;border-radius:16px;padding:8px 14px;font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,.1);white-space:nowrap;opacity:0;transition:opacity .3s;z-index:5;pointer-events:none}
 .bubble.show{opacity:1}
 .bubble:after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-top-color:#fff;border-bottom:0}
@@ -220,7 +242,8 @@ let PENDING = null, NEWER = null, DEMO = false, S = null, TAB = 'home', RANK = '
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const isUrl = s => /^https?:\/\//.test(s || '') || /^[\w\-./]+\.(png|jpe?g|gif|webp|svg)$/i.test(s || '');
+const USE_CUSTOM_ART = false;   // false = 一律用內建圖案；true = 使用試算表裡填的圖片網址
+const isUrl = s => USE_CUSTOM_ART && (/^https?:\/\//.test(s || '') || /^[\w\-./]+\.(png|jpe?g|gif|webp|svg)$/i.test(s || ''));
 
 /* ---------- 啟動 ---------- */
 async function boot() {
@@ -310,6 +333,46 @@ function moodOf() {
   if (me.miss === 1) return 'hungry';
   return 'waiting';
 }
+/* ===== 隨機性 =====
+   用寵物 ID、日期算出來的「固定隨機」：同一隻寵物個性不會一直變，同一天大家看到的天氣一樣 */
+function hashStr(s) { let x = 2166136261; for (const c of String(s)) { x ^= c.codePointAt(0); x = Math.imul(x, 16777619); } return x >>> 0; }
+function pick(arr, seed) { return arr[hashStr(seed) % arr.length]; }
+const rnd = arr => arr[Math.floor(Math.random() * arr.length)];
+
+const PERSONALITIES = [
+  { name: '貪吃鬼', icon: '🍩', food: ['🍩', '🍔', '🍕', '🍰'], lines: ['還有沒有？我還吃得下！', '聞到好吃的味道了…', '吃飽才有力氣跑業務！'] },
+  { name: '愛睡覺', icon: '😴', food: ['🥛', '🍵', '🍪'], lines: ['呼…再睡五分鐘…', '（打了一個大哈欠）', '今天也想賴床…'] },
+  { name: '熱血派', icon: '🔥', food: ['🌶️', '🍖', '🥩'], lines: ['今天也要衝業績！', '燃燒吧！', '準時是最強的武器！'] },
+  { name: '害羞', icon: '🙈', food: ['🍓', '🍡', '🍑'], lines: ['（偷偷看著你）', '你、你來了啊…', '謝謝你…很開心…'] },
+  { name: '好奇寶寶', icon: '🔍', food: ['🍄', '🥝', '🌽'], lines: ['那是什麼？', '今天島上有什麼新鮮事？', '我想去海邊探險！'] },
+  { name: '愛撒嬌', icon: '💕', food: ['🍬', '🧁', '🍓'], lines: ['抱抱～', '最喜歡你了！', '摸摸頭嘛～'] },
+  { name: '冷靜派', icon: '😎', food: ['☕', '🥗', '🍙'], lines: ['嗯，準時，不錯。', '保持節奏就對了。', '穩穩的，很好。'] },
+  { name: '樂天派', icon: '🌈', food: ['🍉', '🍦', '🍌'], lines: ['今天也是好日子！', '嘿嘿嘿～', '一起加油吧！'] }
+];
+const FOODS = ['🍖', '🍙', '🍓', '🐟', '🥕', '🍎', '🍞', '🧀', '🍇', '🥟'];
+function traitsOf(p) {
+  if (!p || !p.id || p.stage === '蛋') return null;
+  const h = hashStr(p.id);
+  return {
+    pers: PERSONALITIES[h % PERSONALITIES.length],
+    shiny: (h >>> 8) % 100 < 8,                 // 8% 機率是閃亮款
+    scale: 0.9 + ((h >>> 4) % 21) / 100          // 體型 0.90～1.10 倍
+  };
+}
+const WEATHERS = [
+  { key: 'sunny', name: '晴天', icon: '☀️' }, { key: 'sunny', name: '晴天', icon: '☀️' },
+  { key: 'cloudy', name: '多雲', icon: '⛅' }, { key: 'rain', name: '小雨', icon: '🌧️' },
+  { key: 'rainbow', name: '彩虹', icon: '🌈' }, { key: 'breeze', name: '微風落葉', icon: '🍃' }
+];
+function weatherToday() { return pick(WEATHERS, 'w' + (S.today && S.today.date)); }
+const LOTS = [['大吉', 1], ['中吉', 2], ['中吉', 2], ['小吉', 3], ['小吉', 3], ['吉', 3], ['吉', 3], ['末吉', 2]];
+const LUCKY_TODO = ['打給一位很久沒聯絡的老客戶', '整理一次客戶名單', '約一位客戶喝咖啡', '寫一則有溫度的貼文', '學一個新商品的重點', '稱讚一位夥伴', '提早 10 分鐘出門', '幫客戶做一次保單健檢', '跟主管請教一個問題', '把明天的行程排好'];
+const LUCKY_COLOR = ['紅色', '橘色', '黃色', '綠色', '藍色', '紫色', '白色', '咖啡色'];
+function fortuneToday() {
+  const seed = (S.today && S.today.date) + (S.me && S.me.userId);
+  return { lot: pick(LOTS.map(x => x[0]), 'l' + seed), todo: pick(LUCKY_TODO, 't' + seed), color: pick(LUCKY_COLOR, 'c' + seed), num: hashStr('n' + seed) % 9 + 1 };
+}
+
 const LINES = {
   happy: ['今天吃得好飽！', '謝謝你準時來看我～', '嘿嘿，我又長大一點了', '明天也要準時喔！', '最喜歡你了！'],
   waiting: ['肚子咕嚕咕嚕…', '今天的飼料呢？', '記得 8:30 前來喔！', '在等你喔～'],
@@ -378,10 +441,12 @@ function renderHome() {
     const eggBase = S.eggImg || (isEgg ? p.img : '');
     if (!eggSt.length && /egg\.png$/i.test(eggBase || '')) eggSt = [1, 2, 3, 4].map(i => eggBase.replace(/egg\.png$/i, 'egg_' + i + '.png'));
     const eggArt = isEgg && eggSt.length ? eggSt[Math.min(eggSt.length - 1, Math.round(p.progress * (eggSt.length - 1) / Math.max(1, p.need - 2)))] : '';
+    const tr = traitsOf(p);
     const cls = ['pet', isEgg && !eggArt ? 'egg wob' + Math.min(4, p.progress) : '', mood === 'sad' ? 'sad' : ''].join(' ');
     stageInner = `<div class="petwrap">
       ${mood === 'capsule' ? '<div class="capsule"></div>' : ''}
-      <div id="pet" class="${cls}" style="font-size:${size}px${sadF}" onclick="poke()">
+      <div id="pet" class="${cls}${tr && tr.shiny ? ' shiny' : ''}" style="font-size:${Math.round(size * (tr ? tr.scale : 1))}px${sadF}" onclick="poke()">
+        ${tr && tr.shiny ? '<span class="sparkle" style="left:-10px;top:0">✨</span><span class="sparkle" style="right:-14px;top:30%;animation-delay:.7s">✨</span>' : ''}
         <span class="body">${eggArt ? art('🥚', eggArt, size + 40) : isEgg && isUrl(p.img) ? art('🥚', p.img, size + 40, { mode: 'still', frame: Math.min(3, Math.round(p.progress * 3 / Math.max(1, p.need - 2))) }) : petGlyph(p.emoji, p.img, p.hue, size)}</span>${isEgg && !isUrl(p.img) ? crackSVG(Math.min(4, p.progress)) : ''}${accH}<div class="shadow"></div>
       </div>
       ${mood === 'capsule' ? '<div class="zz">💤</div>' : ''}${mood === 'hungry' || mood === 'sad' ? '<div class="sweat">💧</div>' : ''}
@@ -398,11 +463,13 @@ function renderHome() {
     sub = mood === 'capsule' ? '今天在太空膠囊裡休息，不會餓也不會長大' : `再領 ${p.need - p.progress} 次飼料就會孵化`;
     bar = progressBar(p);
   } else {
-    title = `${esc(p.name || p.speciesName)} <span class="tag ${p.rarity === '稀有' ? 'rare' : ''}">${esc(p.stage)}</span>`;
+    const tr2 = traitsOf(p);
+    title = `${esc(p.name || p.speciesName)} <span class="tag ${p.rarity === '稀有' ? 'rare' : ''}">${esc(p.stage)}</span>${tr2 && tr2.shiny ? ' <span class="tag rare">✨閃亮</span>' : ''}`;
     const left = p.need - p.progress;
     sub = (p.name ? esc(p.speciesName) + '・' : '') + (mood === 'capsule' ? '今天在太空膠囊裡休息，不會餓也不會長大'
       : p.stage === '完全體' ? `再 ${left} 次就畢業，會得到一顆新蛋` : `再 ${left} 次就會進化`);
     bar = progressBar(p);
+    if (tr2) sub = `${tr2.pers.icon} 個性：${tr2.pers.name}・` + sub;
     if (!p.name) sub += ` ・ <a href="#" onclick="askName();return false" style="color:var(--sea)">幫牠取名</a>`;
   }
 
@@ -420,14 +487,18 @@ function renderHome() {
 
   const grads = S.graduates.length ? `<div class="card"><h3>🎓 畢業寵物 <small>${S.graduates.length} 隻</small></h3><div class="grads">${S.graduates.map(g => `<div><b>${petGlyph(g.emoji, g.img, g.hue, 40)}</b>${esc(g.name || g.speciesName)}</div>`).join('')}</div></div>` : '';
 
+  const w = weatherToday(), ft = fortuneToday();
+  const wx = w.key === 'rain' ? '<div class="rain"></div>' : w.key === 'rainbow' ? '<div class="rainbow"></div>'
+    : w.key === 'breeze' ? '<span class="leaf" style="left:70%">🍃</span><span class="leaf" style="left:95%;animation-delay:2.5s">🍂</span><span class="leaf" style="left:40%;animation-delay:4s">🍃</span>' : '';
   el.innerHTML = `
     <div class="chips">
       <div class="chip">🔥 連續 <b>${me.streak}</b></div>
       <div class="chip">🍖 累積 <b>${me.total}</b></div>
       <div class="chip">📅 ${esc(S.today.weekday)}・${S.today.workday ? esc(S.today.deadline) + ' 前' : '休息日'}</div>
+      <div class="chip">${w.icon} 島上${w.name}</div>
     </div>
-    <div class="stage ${bgCls}" id="stage" style="${bgStyle}">
-      <div class="sun"></div><div class="cloud">☁️</div>${deco}<div class="sea"></div><div class="island"></div>${tableDeco()}
+    <div class="stage ${bgCls} weather-${w.key}" id="stage" style="${bgStyle}">
+      <div class="sun"></div><div class="cloud">☁️</div>${w.key === 'cloudy' ? '<div class="cloud" style="top:80px;animation-duration:52s;animation-delay:-20s">☁️</div>' : ''}${deco}${wx}<div class="sea"></div><div class="island"></div>${tableDeco()}
       ${stageInner}
       <div class="bubble" id="bubble"></div>
     </div>
@@ -435,6 +506,8 @@ function renderHome() {
     ${bar}
     <button class="btn-feed" id="feedBtn" ${fs.dis ? 'disabled' : ''} onclick="claim()">${fs.label}</button>
     ${!me.fedToday && !me.leaveToday && S.today.workday ? `<button class="linkbtn" onclick="askLeave()">今天請假（讓寵物進太空膠囊）</button>` : ''}
+    <div class="card"><h3>🔮 今日運勢 <small>每天換一次</small></h3>
+      <div class="fortune"><div class="lot">${ft.lot}</div><div class="txt">今天適合：<b>${esc(ft.todo)}</b><br>幸運色：${ft.color}・幸運數字：${ft.num}</div></div></div>
     <div class="card"><h3>今天的島民 <small>${fedN}/${S.team.length} 已領飼料</small></h3><div class="team">${team}</div></div>
     <div class="card"><h3>🎒 我的道具 <small>點一下穿戴／取下</small></h3><div class="inv">${inv}</div></div>
     ${grads}`;
@@ -453,8 +526,11 @@ function progressBar(p) {
 
 function say(text) {
   const b = $('#bubble'); if (!b) return;
-  const arr = LINES[moodOf()] || LINES.waiting;
-  b.textContent = text || arr[Math.floor(Math.random() * arr.length)];
+  const mood = moodOf();
+  let arr = LINES[mood] || LINES.waiting;
+  const tr = traitsOf(S.pet);
+  if (tr && ['happy', 'waiting'].includes(mood) && Math.random() < 0.5) arr = tr.pers.lines;
+  b.textContent = text || rnd(arr);
   b.classList.add('show'); clearTimeout(b._h); b._h = setTimeout(() => b.classList.remove('show'), 2600);
 }
 function poke() {
@@ -499,13 +575,16 @@ async function claim() {
 async function feedAnim(evs) {
   const st = $('#stage'); if (!st) return;
   const away = evs.some(e => e.type === 'awayFeed' || e.type === 'home');
-  const f = document.createElement('div'); f.className = 'food'; f.textContent = '🍖';
+  const tr = traitsOf(S.pet);
+  const food = tr && Math.random() < 0.6 ? rnd(tr.pers.food) : rnd(FOODS);
+  const f = document.createElement('div'); f.className = 'food'; f.textContent = food;
   f.style.setProperty('--land', away ? '200px' : '170px'); st.appendChild(f);
   await sleep(700);
   const pet = $('#pet');
   if (pet && !away) { pet.classList.add('chomp'); }
   f.style.transition = 'opacity .4s,transform .4s'; f.style.opacity = 0; f.style.transform = 'translateX(-50%) scale(.3)';
-  fx('+1', '#FF7A59'); await sleep(250); fx('💕'); await sleep(250); fx('✨');
+  fx('+1', '#FF7A59'); await sleep(250); fx(rnd(['💕', '😋', '🎵', '💛'])); await sleep(250); fx('✨');
+  if (!away) say(rnd(['好好吃！', '是' + food + '耶！', '吃飽飽～', '謝謝你！', '還想再吃一個…']));
   await sleep(700);
 }
 
@@ -618,7 +697,8 @@ async function showHatch(pet) {
   $('#hatchEgg').classList.remove('shake'); $('#hatchEgg').classList.add('popin');
   $('#hatchEgg').innerHTML = petGlyph(pet.emoji, pet.img, pet.hue, 130); hydrate($('#sheet'));
   $('#hatchT').innerHTML = `孵出了「${esc(pet.speciesName)}」！${pet.rarity === '稀有' ? ' <span class="tag rare">稀有</span>' : ''}`;
-  $('#hatchP').textContent = pet.intro || '';
+  const htr = traitsOf(pet);
+  $('#hatchP').innerHTML = esc(pet.intro || '') + (htr ? `<br>個性：${htr.pers.icon} <b>${htr.pers.name}</b>${htr.shiny ? '<br>✨ 而且是<b>閃亮款</b>！超稀有！' : ''}` : '');
   $('#hatchName').style.display = 'block';
   await p;
   const name = ($('#petName') || {}).value || '';
@@ -856,6 +936,22 @@ function mockApi(action, p) {
   else if (action === 'admin_approve') st.admin.pending = st.admin.pending.filter(x => x.userId !== p.userId);
   return { ok: true, events: ev, state: st };
 }
+
+/* 寵物閒著的時候會隨機走動、跳舞、轉圈 */
+setInterval(() => {
+  if (BUSY || TAB !== 'home' || !S || !S.pet || document.hidden || $('#mask').classList.contains('show')) return;
+  const mood = moodOf(); if (['away', 'capsule', 'egg', 'egghappy'].includes(mood)) return;
+  const pet = $('#pet'), wrap = document.querySelector('.petwrap'); if (!pet || !wrap) return;
+  const act = rnd(['walk', 'walk', 'dance', 'spin', 'wiggle', 'jump', 'talk', 'rest']);
+  if (act === 'walk') {
+    const x = rnd([-90, -60, -30, 0, 30, 60, 90]);
+    const body = pet.querySelector('.body');
+    const cur = parseInt(wrap.dataset.x || '0', 10);
+    if (body) body.style.transform = x > cur ? 'scaleX(-1)' : 'none';
+    wrap.dataset.x = x; wrap.style.transform = `translateX(calc(-50% + ${x}px))`;
+  } else if (act === 'talk') say();
+  else if (act !== 'rest') { pet.classList.remove(act); void pet.offsetWidth; pet.classList.add(act); setTimeout(() => pet.classList.remove(act), 1300); }
+}, 4500);
 
 boot();
 </script>
