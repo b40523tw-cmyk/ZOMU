@@ -1,0 +1,859 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>卓木島寵物小屋</title>
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js" charset="utf-8"></script>
+<style>
+:root{--sea:#2A9D8F;--sea2:#7FD1C7;--sand:#F4E3C1;--sand2:#E6CB97;--wood:#8B5E3C;--ink:#3D2C1E;--muted:#7A6A58;--coral:#FF7A59;--card:#FFFDF7;--line:#EADBC0;--bg:#FBF4E6}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif}
+button{font-family:inherit;cursor:pointer}
+#app{max-width:520px;margin:0 auto;min-height:100vh;padding-bottom:92px}
+.top{display:flex;align-items:flex-end;justify-content:space-between;padding:16px 16px 4px}
+.brand b{font-size:21px;letter-spacing:1px}.brand span{font-size:11px;color:var(--sea);font-weight:900;letter-spacing:3px;margin-left:6px}
+.tagline{font-size:11px;color:var(--muted);text-align:right;line-height:1.4}
+.tab{display:none;padding:0 16px}.tab.active{display:block;animation:fade .25s}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.chips{display:flex;gap:8px;margin:10px 0 12px;flex-wrap:wrap}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;white-space:nowrap}
+.chip b{color:var(--coral)}
+/* 舞台 */
+.stage{position:relative;height:320px;border-radius:26px;overflow:hidden;background:linear-gradient(#BFE8F5,#E8F7F4 62%)}
+.stage .sun{position:absolute;right:28px;top:24px;width:46px;height:46px;border-radius:50%;background:#FFD166;box-shadow:0 0 0 10px rgba(255,209,102,.25)}
+.stage .cloud{position:absolute;top:44px;left:-80px;font-size:34px;opacity:.85;animation:cloud 38s linear infinite}
+@keyframes cloud{to{left:110%}}
+.stage .sea{position:absolute;left:0;right:0;bottom:0;height:96px;background:linear-gradient(var(--sea2),var(--sea))}
+.stage .sea:before{content:"";position:absolute;left:0;right:0;top:-8px;height:16px;background:radial-gradient(circle at 10px 16px,transparent 9px,var(--sea2) 10px) 0 0/20px 16px repeat-x;animation:wave 6s linear infinite}
+@keyframes wave{to{background-position:200px 0}}
+.stage .island{position:absolute;left:50%;bottom:40px;transform:translateX(-50%);width:80%;height:72px;border-radius:50%;background:radial-gradient(ellipse at 50% 30%,var(--sand),var(--sand2))}
+.stage .deco{position:absolute;left:18px;bottom:88px;font-size:56px}
+.bg-sunset{background:linear-gradient(#FF9A76,#FFC38E 50%,#FFE6C9)}.bg-sunset .sun{background:#FF6B4A;top:110px;box-shadow:0 0 0 14px rgba(255,107,74,.2)}
+.bg-stars{background:radial-gradient(1.5px 1.5px at 20% 20%,#fff,transparent),radial-gradient(1.5px 1.5px at 70% 15%,#fff,transparent),radial-gradient(1px 1px at 45% 35%,#fff,transparent),radial-gradient(1.5px 1.5px at 85% 40%,#fff,transparent),radial-gradient(1px 1px at 12% 45%,#fff,transparent),linear-gradient(#18244A,#3B4E7A 60%,#6A7FB0)}
+.bg-stars .sun{background:#FFF5CC;box-shadow:0 0 24px 6px rgba(255,245,204,.5)}.bg-stars .cloud{display:none}
+.bg-volcano{background:linear-gradient(#FFB199,#FFDAB9 60%)}
+.bg-palm{background:linear-gradient(#9EE6D8,#E8FBF6 60%)}
+.petwrap{position:absolute;left:50%;bottom:80px;transform:translateX(-50%);display:flex;align-items:flex-end;justify-content:center}
+.pet{position:relative;line-height:1;animation:bob 2.6s ease-in-out infinite;transform-origin:50% 100%;user-select:none;-webkit-user-select:none}
+.pet .body{display:block;line-height:1}
+.pet .body img{display:block;object-fit:contain}
+@keyframes bob{0%,100%{transform:translateY(0) scale(1,1)}50%{transform:translateY(-6px) scale(1.03,.97)}}
+.pet.jump{animation:jump .65s ease}
+@keyframes jump{0%{transform:none}30%{transform:translateY(-40px) scale(.94,1.08)}60%{transform:translateY(0) scale(1.1,.9)}80%{transform:translateY(-6px)}100%{transform:none}}
+.pet.chomp{animation:chomp .9s ease}
+@keyframes chomp{0%,100%{transform:scale(1)}20%{transform:scale(1.14,.88)}40%{transform:scale(.94,1.06)}60%{transform:scale(1.12,.9)}80%{transform:scale(.98,1.02)}}
+.pet.sad{animation:bob 4.5s ease-in-out infinite}
+.pet.egg.wob1{animation:eggwob 5s ease-in-out infinite}.pet.egg.wob2{animation:eggwob 3.6s ease-in-out infinite}
+.pet.egg.wob3{animation:eggwob 2.4s ease-in-out infinite}.pet.egg.wob4{animation:eggwob 1.5s ease-in-out infinite}
+@keyframes eggwob{0%,78%,100%{transform:rotate(0)}82%{transform:rotate(-8deg)}86%{transform:rotate(8deg)}90%{transform:rotate(-6deg)}94%{transform:rotate(4deg)}}
+.cracks{position:absolute;inset:0;pointer-events:none}
+.shadow{position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:66%;height:12px;border-radius:50%;background:rgba(0,0,0,.13);z-index:-1}
+.acc{position:absolute;font-size:.36em;right:-.12em;top:-.2em;filter:none}
+.acc img{width:1em;height:1em;object-fit:contain}
+.spr{display:inline-block;vertical-align:bottom;background-repeat:no-repeat;background-position:0 0}
+.table-deco{position:absolute;left:4%;bottom:52px;z-index:1;filter:drop-shadow(0 4px 4px rgba(0,0,0,.12))}
+.story{position:relative;height:260px;display:grid;place-items:center}
+.story .spr{transition:opacity .35s}
+.story .dots{margin:4px 0 12px}
+.capsule{position:absolute;left:50%;bottom:-14px;transform:translateX(-50%);width:calc(100% + 56px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.95),rgba(190,225,255,.4) 32%,rgba(120,170,230,.22));border:2px solid rgba(255,255,255,.85);box-shadow:0 0 30px rgba(140,190,255,.7);animation:float 3s ease-in-out infinite;z-index:2;pointer-events:none}
+@keyframes float{50%{transform:translateX(-50%) translateY(-8px)}}
+.zz,.sweat{position:absolute;font-size:26px;z-index:3}
+.zz{right:-30px;top:-20px;animation:zz 2.4s ease-in-out infinite}.sweat{right:-14px;top:-4px;animation:zz 2s ease-in-out infinite}
+@keyframes zz{0%{opacity:0;transform:translateY(6px)}50%{opacity:1}100%{opacity:0;transform:translateY(-14px)}}
+.awaybox{position:absolute;left:50%;bottom:84px;transform:translateX(-50%);text-align:center}
+.awaybox .house{font-size:110px;line-height:1;filter:saturate(.7)}
+.awaybox .note{position:absolute;right:-26px;bottom:6px;font-size:36px;animation:flutter 3s ease-in-out infinite}
+@keyframes flutter{50%{transform:rotate(-12deg) translateY(-3px)}}
+.bubble{position:absolute;left:50%;top:22px;transform:translateX(-50%);background:#fff;border-radius:16px;padding:8px 14px;font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,.1);white-space:nowrap;opacity:0;transition:opacity .3s;z-index:5;pointer-events:none}
+.bubble.show{opacity:1}
+.bubble:after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-top-color:#fff;border-bottom:0}
+.fx{position:absolute;pointer-events:none;z-index:6;animation:floatUp 1.3s ease-out forwards;font-weight:900}
+@keyframes floatUp{from{opacity:1;transform:translate(-50%,0) scale(.8)}to{opacity:0;transform:translate(-50%,-80px) scale(1.2)}}
+.food{position:absolute;left:50%;top:-50px;font-size:42px;transform:translateX(-50%);z-index:6;animation:drop .7s cubic-bezier(.5,0,.75,.5) forwards}
+@keyframes drop{to{top:var(--land)}}
+/* 名稱與進度 */
+.namebar{text-align:center;margin:14px 0 6px}
+.namebar h2{margin:0;font-size:21px;display:inline-flex;align-items:center;gap:6px}
+.tag{font-size:12px;background:var(--sea);color:#fff;border-radius:999px;padding:2px 9px;font-weight:700}
+.tag.rare{background:linear-gradient(135deg,#B983FF,#FF7AB6)}
+.sub{color:var(--muted);font-size:13px;margin-top:4px}
+.bar{height:12px;border-radius:999px;background:#EFE3CB;overflow:hidden;margin:8px 0 4px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#F4A261,var(--coral));border-radius:999px;transition:width .7s}
+.barlabel{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.dots{display:flex;gap:7px;justify-content:center;margin:10px 0}
+.dots i{width:14px;height:14px;border-radius:50%;background:#E6D9BF}.dots i.on{background:var(--sea)}
+.btn-feed{width:100%;margin:16px 0 8px;padding:17px;border:0;border-radius:18px;font-size:18px;font-weight:900;color:#fff;background:linear-gradient(135deg,#FF8A5B,#F4A261);box-shadow:0 6px 0 #D9773F;transition:transform .08s}
+.btn-feed:active:not(:disabled){transform:translateY(3px);box-shadow:0 3px 0 #D9773F}
+.btn-feed:disabled{background:#D6CAB4;box-shadow:0 6px 0 #BFB197;cursor:default}
+.linkbtn{background:none;border:0;color:var(--muted);font-size:13px;text-decoration:underline;display:block;margin:2px auto 8px;padding:6px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin:12px 0}
+.card h3{margin:0 0 10px;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.card h3 small{font-weight:400;color:var(--muted);font-size:12px}
+.center{text-align:center}
+.team{display:flex;gap:10px;overflow-x:auto;padding-bottom:2px}
+.mate{text-align:center;font-size:11px;min-width:58px;color:var(--muted)}
+.mate .nm{color:var(--ink);max-width:58px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.av{width:44px;height:44px;border-radius:50%;object-fit:cover;display:grid;place-items:center;background:#D9C7A3;font-weight:800;color:#fff;margin:0 auto 4px;position:relative;font-size:17px;flex:none}
+.av img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.av .st{position:absolute;right:-4px;bottom:-4px;font-size:15px;background:#fff;border-radius:50%;width:21px;height:21px;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.inv{display:flex;gap:8px;flex-wrap:wrap}
+.it{border:2px solid var(--line);background:#fff;border-radius:14px;padding:6px 8px;font-size:12px;text-align:center;min-width:64px;color:var(--ink)}
+.it b{display:block;font-size:26px;line-height:1.2}
+.it.on{border-color:var(--sea);background:#E7F6F3}
+.empty{color:var(--muted);font-size:13px}
+.grads{display:flex;gap:12px;overflow-x:auto}
+.grads div{text-align:center;font-size:12px;min-width:60px}.grads b{font-size:36px;display:block}
+/* 卓木樹 */
+.treebox{position:relative;height:300px;border-radius:26px;background:linear-gradient(#CFEFFF,#F1FBF7);overflow:hidden;margin-top:12px}
+.ground{position:absolute;bottom:0;left:0;right:0;height:72px;background:linear-gradient(#A6D98F,#6DB36A);border-radius:50% 50% 0 0/38px 38px 0 0}
+.treeE{position:absolute;bottom:50px;left:50%;line-height:1;transform:translateX(-50%);animation:sway 4.5s ease-in-out infinite;transform-origin:50% 100%}
+.treeE img{display:block;object-fit:contain}
+@keyframes sway{0%,100%{transform:translateX(-50%) rotate(-2deg)}50%{transform:translateX(-50%) rotate(2deg)}}
+.path{display:flex;justify-content:space-between;gap:2px;margin-top:6px}
+.path div{flex:1;text-align:center;font-size:11px;color:var(--muted)}
+.path b{display:block;font-size:22px;filter:grayscale(1);opacity:.35}
+.path .done b{filter:none;opacity:1}.path .cur{color:var(--sea);font-weight:800}
+.motto{text-align:center;padding:18px 10px;background:linear-gradient(135deg,#2A9D8F,#3BB3A3);color:#fff;border:0}
+.motto b{font-size:18px;letter-spacing:2px;display:block}.motto span{font-size:12px;opacity:.85}
+/* 圖鑑 */
+.dex{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.dx{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 6px;text-align:center;position:relative}
+.dx .e{font-size:44px;line-height:1.15}.dx .e img{width:52px;height:52px;object-fit:contain}
+.dx.lock .e{filter:brightness(0);opacity:.15}
+.dx .n{font-weight:800;font-size:13px;margin-top:4px}.dx .o{font-size:11px;color:var(--muted);margin-top:2px;min-height:14px}
+.dx .r{position:absolute;top:6px;right:6px;font-size:10px}
+/* 排行 */
+.seg{display:flex;background:#EFE3CB;border-radius:999px;padding:4px;margin:12px 0}
+.seg button{flex:1;border:0;background:none;padding:8px;border-radius:999px;font-size:14px;color:var(--muted)}
+.seg .on{background:#fff;color:var(--ink);font-weight:800;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.row{display:flex;align-items:center;gap:10px;padding:10px 2px;border-bottom:1px dashed var(--line)}
+.row:last-child{border-bottom:0}
+.rk{width:30px;text-align:center;font-weight:900;font-size:16px;color:var(--muted)}
+.row .nm{flex:1;font-weight:700}.row .pe{font-size:24px}.row .v{font-weight:900;color:var(--coral);min-width:56px;text-align:right}.row .v small{font-weight:400;color:var(--muted);font-size:11px}
+/* 管理 */
+.field{display:flex;flex-direction:column;gap:4px;margin:8px 0;font-size:13px;color:var(--muted)}
+.field input{font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);font-family:inherit}
+.btn{border:0;border-radius:12px;padding:11px 14px;font-size:15px;font-weight:800;background:var(--sea);color:#fff}
+.btn.ghost{background:#EFE3CB;color:var(--ink)}.btn.warn{background:#E76F51}
+.btn.full{width:100%}
+.btns{display:flex;gap:8px;margin-top:8px}.btns .btn{flex:1}
+.place{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.place:last-child{border-bottom:0}.place .nm{flex:1}.place small{display:block;color:var(--muted);font-size:11px}
+.sw{position:relative;width:46px;height:26px;border-radius:999px;background:#D6CAB4;border:0;transition:.2s;flex:none}
+.sw:after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.2s}
+.sw.on{background:var(--sea)}.sw.on:after{left:23px}
+.daystat{font-size:15px;margin:6px 0;font-weight:700}
+/* 底部選單 */
+.tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:center;background:rgba(255,253,247,.96);border-top:1px solid var(--line);padding:6px 0 calc(6px + env(safe-area-inset-bottom));backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:20}
+.tabbar button{flex:1;max-width:104px;background:none;border:0;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:1px;padding:2px}
+.tabbar button b{font-size:22px;filter:grayscale(.6);opacity:.7}
+.tabbar .on{color:var(--sea);font-weight:800}.tabbar .on b{filter:none;opacity:1}
+/* 彈窗、提示 */
+.mask{position:fixed;inset:0;background:rgba(40,30,20,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:20px}
+.mask.show{display:flex}
+.sheet{background:var(--card);border-radius:26px;padding:26px 20px 20px;width:100%;max-width:380px;text-align:center;animation:pop .35s cubic-bezier(.3,1.4,.6,1)}
+@keyframes pop{from{transform:scale(.7);opacity:0}to{transform:none;opacity:1}}
+.sheet h2{margin:8px 0 6px;font-size:22px}.sheet p{margin:0 0 14px;color:var(--muted);font-size:14px;line-height:1.6}
+.big{font-size:104px;line-height:1.1;display:inline-block}
+.big img{width:130px;height:130px;object-fit:contain}
+.shake{animation:shake .14s linear infinite}
+@keyframes shake{25%{transform:rotate(-7deg)}75%{transform:rotate(7deg)}}
+.popin{animation:popin .6s cubic-bezier(.3,1.6,.6,1)}
+@keyframes popin{from{transform:scale(.2) rotate(-20deg);opacity:0}to{transform:none;opacity:1}}
+.flash{position:fixed;inset:0;background:#fff;z-index:49;pointer-events:none;animation:flash .7s ease-out forwards}
+@keyframes flash{from{opacity:.95}to{opacity:0}}
+.confetti{position:fixed;top:-20px;font-size:20px;z-index:60;pointer-events:none;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(540deg)}}
+#toast{position:fixed;left:50%;top:16px;transform:translate(-50%,-120px);background:var(--ink);color:#fff;padding:12px 18px;border-radius:14px;font-size:14px;z-index:70;transition:transform .3s;max-width:90vw;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+#toast.show{transform:translate(-50%,0)}
+.loading{display:grid;place-items:center;height:70vh;color:var(--muted);text-align:center}
+.loading .big{animation:bob 1.6s ease-in-out infinite}
+#demoBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(74px + env(safe-area-inset-bottom));white-space:nowrap;z-index:30;background:var(--ink);color:#fff;border-radius:14px;padding:6px 10px;font-size:12px;display:none;align-items:center;gap:6px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+#demoBar select{font-size:13px;border-radius:8px;border:0;padding:4px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="brand"><b>卓木島</b><span>ZOMU</span></div>
+    <div class="tagline">Different minds. One table.<br>不同腦袋，同一張桌。</div>
+  </header>
+  <main>
+    <section id="tab-home" class="tab active"><div class="loading"><div><div class="big">🥚</div><p>正在前往卓木島…</p></div></div></section>
+    <section id="tab-tree" class="tab"></section>
+    <section id="tab-dex" class="tab"></section>
+    <section id="tab-rank" class="tab"></section>
+    <section id="tab-admin" class="tab"></section>
+  </main>
+  <nav class="tabbar" id="tabbar"></nav>
+</div>
+<div class="mask" id="mask"><div class="sheet" id="sheet"></div></div>
+<div id="toast"></div>
+<div id="demoBar">示範模式
+  <select id="demoSel">
+    <option value="egg">蛋（再 1 次孵化）</option>
+    <option value="baby">幼年</option>
+    <option value="teen">成長</option>
+    <option value="adult">成熟（再 1 次進化）</option>
+    <option value="final">完全體</option>
+    <option value="hungry">肚子餓</option>
+    <option value="sad">難過</option>
+    <option value="away">離家出走</option>
+    <option value="capsule">太空膠囊（請假）</option>
+    <option value="grad">完全體（再 1 次畢業）</option>
+    <option value="tree">卓木樹差一天完成</option>
+    <option value="pending">等待核准</option>
+  </select>
+</div>
+
+<script>
+/* ============ 設定：部署後只要改這兩行 ============ */
+const CONFIG = {
+  LIFF_ID: '2011927974-1bDytnvY',  // LINE Login 頻道 → LIFF 的 LIFF ID，例如 1234567890-AbCdEfGh
+  GAS_URL: 'https://script.google.com/macros/s/AKfycbwLRMt3xIT76Dz8bwziZjFop_wIt5Cm_pT_JPuw_URkZDnC0KYlu14L7VOyF1HPWbMb/exec'   // Apps Script 網頁應用程式網址（結尾是 /exec）
+};
+/* ================================================== */
+
+let PENDING = null, NEWER = null, DEMO = false, S = null, TAB = 'home', RANK = 'streak', BUSY = false;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const isUrl = s => /^https?:\/\//.test(s || '') || /^[\w\-./]+\.(png|jpe?g|gif|webp|svg)$/i.test(s || '');
+
+/* ---------- 啟動 ---------- */
+async function boot() {
+  DEMO = !CONFIG.LIFF_ID || !CONFIG.GAS_URL || new URLSearchParams(location.search).has('demo');
+  if (DEMO) { startDemo(); return; }
+  try {
+    await liff.init({ liffId: CONFIG.LIFF_ID });
+    if (!liff.isLoggedIn()) { liff.login(); return; }
+    const j = await api('state');
+    if (!j.ok) throw new Error(j.error);
+    S = j.state; render();
+  } catch (e) {
+    $('#tab-home').innerHTML = `<div class="loading"><div><div class="big">🌊</div><p>${esc(e.message || e)}</p><button class="btn" onclick="location.reload()">重新整理</button></div></div>`;
+  }
+}
+
+async function api(action, payload = {}) {
+  if (DEMO) { await sleep(450); return mockApi(action, payload); }
+  const body = Object.assign({ action, idToken: liff.getIDToken() }, payload);
+  const res = await fetch(CONFIG.GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
+  const j = await res.json();
+  if (!j.ok && j.code === 'TOKEN_EXPIRED') { liff.logout(); liff.login(); throw new Error('登入過期，重新登入中…'); }
+  return j;
+}
+
+/* ---------- 共用 ---------- */
+function toast(msg, ms = 2600) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), ms); }
+function avatar(name, pic, st) {
+  const inner = pic ? `<img src="${esc(pic)}" alt="">` : esc(String(name || '?').slice(0, 1));
+  return `<div class="av" style="${pic ? '' : 'background:' + colorOf(name)}">${inner}${st ? `<span class="st">${st}</span>` : ''}</div>`;
+}
+function colorOf(s) { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return `hsl(${h},45%,62%)`; }
+function petGlyph(emoji, img, hue, px) { return art(emoji, img, px, { hue: isUrl(img) ? 0 : hue }); } // 你畫的圖保持原色，變色只用在暫代符號
+/* 圖片：一張圖橫排好幾格（例如 3 格）會自動切開。
+   mode 'anim' = 循環播放成動圖；'still' = 固定顯示某一格（frame 可用 'last'） */
+function art(emoji, img, px, o = {}) {
+  const f = o.hue ? `filter:hue-rotate(${o.hue}deg);` : '';
+  if (!isUrl(img)) return `<span style="${f}">${esc(emoji)}</span>`;
+  return `<span class="spr" data-src="${esc(img)}" data-mode="${o.mode || 'anim'}" data-frame="${o.frame ?? 0}" style="width:${px}px;height:${px}px;${f}"></span>`;
+}
+const SHEETS = {};
+function sheetInfo(src) {
+  if (!SHEETS[src]) SHEETS[src] = new Promise(res => {
+    const im = new Image();
+    im.onload = () => res({ frames: Math.max(1, Math.round(im.naturalWidth / im.naturalHeight)) });
+    im.onerror = () => res({ frames: 1, bad: true });
+    im.src = src;
+  });
+  return SHEETS[src];
+}
+function setFrame(el, i) {
+  const n = el._frames || 1;
+  el.style.backgroundPosition = n > 1 ? `${(i / (n - 1)) * 100}% 0` : 'center';
+  el._cur = i;
+}
+function hydrate(root = document) {
+  root.querySelectorAll('.spr:not([data-ok])').forEach(async el => {
+    el.setAttribute('data-ok', '1');
+    const src = el.dataset.src, info = await sheetInfo(src);
+    el._frames = info.frames;
+    el.style.backgroundImage = `url("${src.replace(/"/g, '%22')}")`;
+    el.style.backgroundSize = info.frames > 1 ? `${info.frames * 100}% 100%` : 'contain';
+    const fr = el.dataset.frame === 'last' ? info.frames - 1 : Math.min(info.frames - 1, +el.dataset.frame || 0);
+    setFrame(el, fr);
+  });
+}
+let TICK = 0;
+setInterval(() => {
+  TICK++;
+  document.querySelectorAll('.spr[data-mode="anim"]').forEach(el => {
+    const n = el._frames || 1; if (n < 2 || n > 3) return;   // 4 格以上是過程圖（例如蛋），不循環
+    const seq = n === 2 ? [0, 0, 0, 1] : n === 3 ? [0, 0, 0, 0, 0, 1, 0, 2] : [0, 0, 0, ...Array.from({ length: n - 1 }, (_, i) => i + 1)];
+    setFrame(el, seq[TICK % seq.length]);
+  });
+}, 170);
+function nowMinTaipei() { const d = new Date(); return ((d.getUTCHours() + 8) % 24) * 60 + d.getUTCMinutes(); }
+function hm(s) { const m = String(s).match(/(\d+):(\d+)/); return m ? +m[1] * 60 + +m[2] : 510; }
+function itemByCode(c) { return (S.items || []).find(i => i.code === c); }
+
+function moodOf() {
+  const me = S.me;
+  if (me.away) return 'away';
+  if (me.leaveToday) return 'capsule';
+  if (S.pet && S.pet.stage === '蛋') return me.fedToday ? 'egghappy' : 'egg';
+  if (me.fedToday) return 'happy';
+  if (me.miss >= 2) return 'sad';
+  if (me.miss === 1) return 'hungry';
+  return 'waiting';
+}
+const LINES = {
+  happy: ['今天吃得好飽！', '謝謝你準時來看我～', '嘿嘿，我又長大一點了', '明天也要準時喔！', '最喜歡你了！'],
+  waiting: ['肚子咕嚕咕嚕…', '今天的飼料呢？', '記得 8:30 前來喔！', '在等你喔～'],
+  hungry: ['好餓喔…', '昨天沒等到你…', '今天會來嗎？'],
+  sad: ['你是不是忘記我了…', '再不來我要離家出走了…'],
+  egg: ['（蛋輕輕晃了一下）', '（裡面好像有聲音…）', '（蛋殼暖暖的）'],
+  egghappy: ['（蛋開心地搖了搖）', '（裂縫又多了一點）'],
+  capsule: ['Zzz…（在膠囊裡睡得很香）', '好好休息，明天見！'],
+  away: ['（紙條：連續準時 3 天，我就回家）']
+};
+function petSize(p) {
+  if (!p) return 100;
+  const r = Math.min(1, p.progress / Math.max(1, p.need));
+  const R = { '蛋': [92, 92], '幼年': [80, 100], '成長': [100, 120], '成熟': [120, 140], '完全體': [140, 160], '畢業': [150, 150] }[p.stage] || [100, 100];
+  return Math.round(R[0] + (R[1] - R[0]) * r);
+}
+function crackSVG(n) {
+  const P = ['M48 26 l4 7 l-5 5 l5 7', 'M28 48 l7 3 l3 -6 l7 5', 'M62 44 l6 -4 l4 7 l7 -3', 'M36 64 l6 -5 l5 6 l6 -6 l6 5', 'M50 52 l-3 6 l5 4 l-2 6'];
+  return `<svg class="cracks" viewBox="0 0 100 100">${P.slice(0, n).map(d => `<path d="${d}" fill="none" stroke="#5A4632" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`).join('')}</svg>`;
+}
+
+/* ---------- 畫面 ---------- */
+function render() {
+  renderTabbar(); renderHome(); renderTree(); renderDex(); renderRank(); renderAdmin(); hydrate();
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + TAB));
+}
+function go(t) { TAB = t; render(); window.scrollTo({ top: 0 }); }
+function renderTabbar() {
+  const tabs = [['home', '🏠', '小屋'], ['tree', '🌳', '卓木樹'], ['dex', '📖', '圖鑑'], ['rank', '🏆', '排行']];
+  if (S.admin) tabs.push(['admin', '⚙️', '管理']);
+  if (S.me.status !== '啟用' && !S.admin) { $('#tabbar').innerHTML = ''; return; }
+  $('#tabbar').innerHTML = tabs.map(([k, i, n]) => `<button class="${TAB === k ? 'on' : ''}" onclick="go('${k}')"><b>${i}</b>${n}</button>`).join('');
+}
+
+function feedState() {
+  const t = S.today, me = S.me;
+  if (me.leaveToday) return { dis: true, label: '🛸 今天在太空膠囊休息' };
+  if (me.fedToday) return { dis: true, label: '✅ 今天已領取飼料' };
+  if (!t.workday) return { dis: true, label: '🌴 今天不用領飼料' };
+  if (!t.beforeDeadline || nowMinTaipei() > hm(t.deadline)) return { dis: true, label: '⏰ 已超過 ' + t.deadline + '，明天早點來' };
+  return { dis: false, label: me.away ? '🍖 領取飼料（放在門口等牠回家）' : '🍖 領取飼料' };
+}
+
+function renderHome() {
+  const me = S.me, p = S.pet, el = $('#tab-home');
+  if (me.status !== '啟用') {
+    el.innerHTML = `<div class="card center" style="margin-top:40px"><div class="big">🏝️</div><h2>歡迎來到卓木島</h2><p class="sub">${me.status === '停用' ? '你的島民資格已暫停，請找島主。' : '已送出加入申請，島主核准後你就會拿到一顆神秘的蛋！'}</p></div>`;
+    return;
+  }
+  const mood = moodOf(), fs = feedState();
+  const bg = itemByCode(me.equipBg), acc = itemByCode(me.equipAcc);
+  const bgCls = bg ? 'bg-' + String(bg.code).replace(/^bg_/, '') : '';
+  const bgStyle = bg && isUrl(bg.img) ? `background:url('${esc(bg.img)}') center/cover` : '';
+  const deco = bg && !isUrl(bg.img) && /volcano|palm/.test(bg.code) ? `<div class="deco">${esc(bg.symbol)}</div>` : '';
+  const size = petSize(p), isEgg = p.stage === '蛋';
+
+  let stageInner;
+  if (mood === 'away') {
+    stageInner = isUrl(S.awayImg)
+      ? `<div class="awaybox" onclick="say()">${art('🏠', S.awayImg, 190)}</div>`
+      : `<div class="awaybox" onclick="say()"><div class="house">🏠</div><div class="note">📜</div></div>`;
+  } else {
+    const accH = !isEgg && acc ? `<span class="acc">${isUrl(acc.img) ? `<img src="${esc(acc.img)}">` : esc(acc.symbol)}</span>` : '';
+    const sadF = mood === 'sad' ? ';filter:saturate(.45)' : '';
+    const eggSt = (S.eggStages || []).filter(isUrl);
+    const eggArt = isEgg && eggSt.length ? eggSt[Math.min(eggSt.length - 1, Math.round(p.progress * (eggSt.length - 1) / Math.max(1, p.need - 2)))] : '';
+    const cls = ['pet', isEgg && !eggArt ? 'egg wob' + Math.min(4, p.progress) : '', mood === 'sad' ? 'sad' : ''].join(' ');
+    stageInner = `<div class="petwrap">
+      ${mood === 'capsule' ? '<div class="capsule"></div>' : ''}
+      <div id="pet" class="${cls}" style="font-size:${size}px${sadF}" onclick="poke()">
+        <span class="body">${eggArt ? art('🥚', eggArt, size + 40) : isEgg && isUrl(p.img) ? art('🥚', p.img, size + 40, { mode: 'still', frame: Math.min(3, Math.round(p.progress * 3 / Math.max(1, p.need - 2))) }) : petGlyph(p.emoji, p.img, p.hue, size)}</span>${isEgg && !isUrl(p.img) ? crackSVG(Math.min(4, p.progress)) : ''}${accH}<div class="shadow"></div>
+      </div>
+      ${mood === 'capsule' ? '<div class="zz">💤</div>' : ''}${mood === 'hungry' || mood === 'sad' ? '<div class="sweat">💧</div>' : ''}
+    </div>`;
+  }
+
+  let title, sub, bar = '';
+  if (mood === 'away') {
+    title = `${esc(p.name || (isEgg ? '你的蛋' : p.speciesName))} 離家出走了`;
+    sub = `連續準時 ${S.rules.homeNeed} 次，牠就會回家`;
+    bar = `<div class="dots">${Array.from({ length: S.rules.homeNeed }, (_, i) => `<i class="${i < me.homeProgress ? 'on' : ''}"></i>`).join('')}</div>`;
+  } else if (isEgg) {
+    title = `神秘的蛋 <span class="tag">蛋</span>`;
+    sub = mood === 'capsule' ? '今天在太空膠囊裡休息，不會餓也不會長大' : `再領 ${p.need - p.progress} 次飼料就會孵化`;
+    bar = progressBar(p);
+  } else {
+    title = `${esc(p.name || p.speciesName)} <span class="tag ${p.rarity === '稀有' ? 'rare' : ''}">${esc(p.stage)}</span>`;
+    const left = p.need - p.progress;
+    sub = (p.name ? esc(p.speciesName) + '・' : '') + (mood === 'capsule' ? '今天在太空膠囊裡休息，不會餓也不會長大'
+      : p.stage === '完全體' ? `再 ${left} 次就畢業，會得到一顆新蛋` : `再 ${left} 次就會進化`);
+    bar = progressBar(p);
+    if (!p.name) sub += ` ・ <a href="#" onclick="askName();return false" style="color:var(--sea)">幫牠取名</a>`;
+  }
+
+  const team = S.team.map(m => {
+    const st = m.fed ? '✅' : m.leave ? '🛸' : !S.today.workday ? '🌴' : (nowMinTaipei() > hm(S.today.deadline) ? '❌' : '⏳');
+    return `<div class="mate">${avatar(m.name, m.picture, st)}<div class="nm">${esc(m.name)}</div></div>`;
+  }).join('');
+  const fedN = S.team.filter(m => m.fed).length;
+
+  const owned = me.items.map(itemByCode).filter(Boolean);
+  const inv = owned.length ? owned.map(i => {
+    const on = i.code === me.equipAcc || i.code === me.equipBg;
+    return `<button class="it ${on ? 'on' : ''}" onclick="equip('${esc(i.code)}')"><b>${isUrl(i.img) ? `<img src="${esc(i.img)}" style="width:28px;height:28px">` : esc(i.symbol)}</b>${esc(i.name)}</button>`;
+  }).join('') : `<div class="empty">連續準時 ${S.rules.itemEvery} 次就會拿到第一個配件，${S.rules.rareAt} 次拿稀有背景！</div>`;
+
+  const grads = S.graduates.length ? `<div class="card"><h3>🎓 畢業寵物 <small>${S.graduates.length} 隻</small></h3><div class="grads">${S.graduates.map(g => `<div><b>${petGlyph(g.emoji, g.img, g.hue, 40)}</b>${esc(g.name || g.speciesName)}</div>`).join('')}</div></div>` : '';
+
+  el.innerHTML = `
+    <div class="chips">
+      <div class="chip">🔥 連續 <b>${me.streak}</b></div>
+      <div class="chip">🍖 累積 <b>${me.total}</b></div>
+      <div class="chip">📅 ${esc(S.today.weekday)}・${S.today.workday ? esc(S.today.deadline) + ' 前' : '休息日'}</div>
+    </div>
+    <div class="stage ${bgCls}" id="stage" style="${bgStyle}">
+      <div class="sun"></div><div class="cloud">☁️</div>${deco}<div class="sea"></div><div class="island"></div>${tableDeco()}
+      ${stageInner}
+      <div class="bubble" id="bubble"></div>
+    </div>
+    <div class="namebar"><h2>${title}</h2><div class="sub">${sub}</div></div>
+    ${bar}
+    <button class="btn-feed" id="feedBtn" ${fs.dis ? 'disabled' : ''} onclick="claim()">${fs.label}</button>
+    ${!me.fedToday && !me.leaveToday && S.today.workday ? `<button class="linkbtn" onclick="askLeave()">今天請假（讓寵物進太空膠囊）</button>` : ''}
+    <div class="card"><h3>今天的島民 <small>${fedN}/${S.team.length} 已領飼料</small></h3><div class="team">${team}</div></div>
+    <div class="card"><h3>🎒 我的道具 <small>點一下穿戴／取下</small></h3><div class="inv">${inv}</div></div>
+    ${grads}`;
+  if (!BUSY) setTimeout(() => say(), 500);
+}
+function tableDeco() {
+  const t = S.tree, n = t.stages.length;
+  if (!n || t.stage < n - 1) return '';
+  const st = t.stages[n - 1];
+  return `<div class="table-deco" style="font-size:44px">${art(st.emoji, st.img, 96, { mode: 'still', frame: 'last' })}</div>`;
+}
+function progressBar(p) {
+  const pct = Math.round(Math.min(1, p.progress / Math.max(1, p.need)) * 100);
+  return `<div class="bar"><i style="width:${pct}%"></i></div><div class="barlabel"><span>${p.stage === '蛋' ? '孵化進度' : '成長進度'}</span><span>${p.progress} / ${p.need}</span></div>`;
+}
+
+function say(text) {
+  const b = $('#bubble'); if (!b) return;
+  const arr = LINES[moodOf()] || LINES.waiting;
+  b.textContent = text || arr[Math.floor(Math.random() * arr.length)];
+  b.classList.add('show'); clearTimeout(b._h); b._h = setTimeout(() => b.classList.remove('show'), 2600);
+}
+function poke() {
+  const pet = $('#pet'); if (!pet || moodOf() === 'capsule') { say(); return; }
+  pet.classList.remove('jump'); void pet.offsetWidth; pet.classList.add('jump');
+  setTimeout(() => pet.classList.remove('jump'), 700);
+  fx(moodOf().startsWith('egg') ? '✨' : ['💕', '💛', '✨', '🎵'][Math.floor(Math.random() * 4)]);
+  say();
+}
+function fx(t, color) {
+  const st = $('#stage'); if (!st) return;
+  const d = document.createElement('div'); d.className = 'fx'; d.textContent = t;
+  d.style.cssText = `left:${42 + Math.random() * 16}%;bottom:${150 + Math.random() * 40}px;font-size:${color ? 26 : 24}px;${color ? 'color:' + color : ''}`;
+  st.appendChild(d); setTimeout(() => d.remove(), 1400);
+}
+
+/* ---------- 領飼料 ---------- */
+function getPos() {
+  return new Promise((res, rej) => {
+    if (DEMO) return res({ lat: 25.04, lng: 121.56, acc: 18 });
+    if (!navigator.geolocation) return rej(new Error('這支手機無法定位'));
+    navigator.geolocation.getCurrentPosition(
+      p => res({ lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy }),
+      e => rej(new Error(e.code === 1 ? '請允許 LINE 使用位置資訊（手機設定 → LINE → 位置）' : '抓不到定位，請到窗邊或稍後再試')),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  });
+}
+async function claim() {
+  if (BUSY) return; BUSY = true;
+  const btn = $('#feedBtn'); btn.disabled = true; btn.textContent = '📍 正在確認位置…';
+  try {
+    const pos = await getPos();
+    btn.textContent = '🍖 領取中…';
+    const j = await api('claim', pos);
+    if (!j.ok) { toast(j.error); BUSY = false; render(); return; }
+    await feedAnim(j.events);
+    NEWER = null; PENDING = j.state;
+    await playEvents(j.events);   // 先播動畫（孵化前不先曝光物種），再換新畫面
+    S = NEWER || j.state; NEWER = null; PENDING = null; BUSY = false; render();
+  } catch (e) { toast(e.message || String(e)); BUSY = false; render(); }
+}
+async function feedAnim(evs) {
+  const st = $('#stage'); if (!st) return;
+  const away = evs.some(e => e.type === 'awayFeed' || e.type === 'home');
+  const f = document.createElement('div'); f.className = 'food'; f.textContent = '🍖';
+  f.style.setProperty('--land', away ? '200px' : '170px'); st.appendChild(f);
+  await sleep(700);
+  const pet = $('#pet');
+  if (pet && !away) { pet.classList.add('chomp'); }
+  f.style.transition = 'opacity .4s,transform .4s'; f.style.opacity = 0; f.style.transform = 'translateX(-50%) scale(.3)';
+  fx('+1', '#FF7A59'); await sleep(250); fx('💕'); await sleep(250); fx('✨');
+  await sleep(700);
+}
+
+/* ---------- 事件動畫 ---------- */
+function modal(html) {
+  return new Promise(res => {
+    $('#sheet').innerHTML = html; $('#mask').classList.add('show'); hydrate($('#sheet'));
+    $('#sheet').querySelectorAll('[data-close]').forEach(b => b.onclick = () => { $('#mask').classList.remove('show'); res(b.dataset.close); });
+  });
+}
+function confetti(n = 36) {
+  const set = ['🎉', '✨', '🌟', '🎊', '💛', '🍃'];
+  for (let i = 0; i < n; i++) {
+    const c = document.createElement('div'); c.className = 'confetti'; c.textContent = set[i % set.length];
+    c.style.left = Math.random() * 100 + 'vw'; c.style.animationDuration = 1.8 + Math.random() * 1.8 + 's'; c.style.animationDelay = Math.random() * .6 + 's';
+    document.body.appendChild(c); setTimeout(() => c.remove(), 4400);
+  }
+}
+function flash() { const f = document.createElement('div'); f.className = 'flash'; document.body.appendChild(f); setTimeout(() => f.remove(), 800); }
+
+async function playEvents(evs) {
+  for (const e of evs || []) {
+    if (e.type === 'hatch') await showHatch(e.pet);
+    else if (e.type === 'evolve') {
+      flash(); confetti(24);
+      await modal(`<div class="big popin">${petGlyph(e.pet.emoji, e.pet.img, e.pet.hue, 130)}</div><h2>✨ 進化了！</h2><p>${esc(e.pet.name || e.pet.speciesName)} 從「${esc(e.from)}」進化成「${esc(e.to)}」！<br>下一次進化還要 ${e.pet.need} 次準時。</p><button class="btn full" data-close="1">太棒了</button>`);
+    } else if (e.type === 'graduate') {
+      const gimg = e.pet.graduateImg || '';
+      const nm = esc(e.pet.name || e.pet.speciesName);
+      const done = modal(`<div class="story" style="height:240px">${isUrl(gimg) ? `<span class="spr" id="gradArt" data-src="${esc(gimg)}" data-mode="still" data-frame="0" style="width:230px;height:230px;transition:opacity .35s"></span>` : '<div class="big popin">🎓</div>'}</div>
+        <h2 id="gradT">${nm} 長大了！</h2><p id="gradP">牠抱著一顆蛋，好像有話想說…</p>
+        <button class="btn full" data-close="1" id="gradBtn" style="visibility:hidden">繼續養下一隻</button>`);
+      const steps = [[`${nm} 要畢業了！`, '牠把這顆蛋留給你，張開翅膀準備出發。'], [`${nm} 畢業了！`, '牠會一直住在你的小屋裡。<br>你得到了一顆新的蛋 🥚']];
+      for (let k = 0; k < 2; k++) {
+        await sleep(1500);
+        const el = $('#gradArt');
+        if (el) { el.style.opacity = 0; await sleep(300); setFrame(el, Math.min(k + 1, (el._frames || 1) - 1)); el.style.opacity = 1; }
+        $('#gradT').textContent = steps[k][0]; $('#gradP').innerHTML = steps[k][1];
+      }
+      confetti(50); $('#gradBtn').style.visibility = 'visible';
+      await done;
+    } else if (e.type === 'item') {
+      const done = modal(`<div class="big shake" id="gift">🎁</div><h2 id="giftT">${e.rare ? '稀有' : ''}獎勵！</h2><p>連續準時 ${e.streak} 次</p><button class="btn full" data-close="1" id="giftBtn" style="visibility:hidden">收下</button>`);
+      await sleep(1100);
+      const g = $('#gift');
+      g.classList.remove('shake'); g.classList.add('popin');
+      g.innerHTML = art(e.item.symbol, e.item.img, 120); hydrate(g);
+      $('#giftT').textContent = `得到「${e.item.name}」！`;
+      $('#giftBtn').style.visibility = 'visible'; confetti(16);
+      await done;
+    } else if (e.type === 'home') {
+      confetti(30);
+      await modal(`<div class="big popin">${petGlyph(e.pet ? e.pet.emoji : '🐾', e.pet ? e.pet.img : '', e.pet ? e.pet.hue : 0, 130)}</div><h2>🏠 牠回家了！</h2><p>謝謝你連續準時，牠一直都知道你在等牠。</p><button class="btn full" data-close="1">歡迎回來</button>`);
+    } else if (e.type === 'awayFeed') {
+      toast(`飼料放在門口了… 回家進度 ${e.progress}/${e.need}`);
+    } else if (e.type === 'tree') {
+      if (e.up && e.stage >= S.tree.stages.length - 1) { await showTableStory(e.img, e.emoji); TAB = 'tree'; }
+      else if (e.up) { confetti(40); await modal(`<div class="big popin">${art(e.emoji, e.img, 130)}</div><h2>🌳 卓木樹長大了！</h2><p>今天全員準時，卓木樹長成了「${esc(e.name)}」！</p><button class="btn full" data-close="1">去看看</button>`); TAB = 'tree'; }
+      else toast('🌱 今天全員準時！卓木樹又長大了一點');
+    } else if (e.type === 'leave') {
+      toast('🛸 寵物進入太空膠囊，今天好好休息！');
+    }
+  }
+}
+
+/* 卓木樹最後一階：三格故事（結果 → 做成木材 → 卓木桌） */
+async function showTableStory(img, emoji) {
+  const caps = [
+    ['卓木樹結滿了果實', '大家一天一天準時，終於把它養到這麼大。'],
+    ['把它做成木材', '一起鋸、一起搬，每一塊都是大家的準時。'],
+    ['卓木島有了一張桌子！', '<b>不同腦袋，同一張桌。</b><br>Different minds. One table.']
+  ];
+  if (!isUrl(img)) {
+    confetti(60);
+    return modal(`<div class="big popin">${esc(emoji || '🪵')}</div><h2>${caps[2][0]}</h2><p>${caps[2][1]}</p><button class="btn full" data-close="1">坐下來</button>`);
+  }
+  const info = await sheetInfo(img);
+  const steps = Math.max(1, Math.min(3, info.frames));
+  const done = modal(`<div class="story"><span class="spr" id="storyArt" data-src="${esc(img)}" data-mode="still" data-frame="0" style="width:250px;height:250px"></span></div>
+    <div class="dots" id="storyDots">${Array.from({ length: steps }, (_, i) => `<i class="${i === 0 ? 'on' : ''}"></i>`).join('')}</div>
+    <h2 id="storyT">${caps[3 - steps][0]}</h2><p id="storyP">${caps[3 - steps][1]}</p>
+    <button class="btn full" id="storyNext"${steps === 1 ? ' style="display:none"' : ''}>下一步</button>
+    <button class="btn full" data-close="1" id="storyDone"${steps === 1 ? '' : ' style="display:none"'}>坐下來</button>`);
+  let i = 0;
+  if (steps === 1) confetti(60);
+  $('#storyNext').onclick = async () => {
+    i++;
+    const el = $('#storyArt'); el.style.opacity = 0; await sleep(300);
+    setFrame(el, i); el.style.opacity = 1;
+    const c = caps[3 - steps + i];
+    $('#storyT').textContent = c[0]; $('#storyP').innerHTML = c[1];
+    $('#storyDots').querySelectorAll('i').forEach((d, k) => d.classList.toggle('on', k <= i));
+    if (i >= steps - 1) { $('#storyNext').style.display = 'none'; $('#storyDone').style.display = 'block'; flash(); confetti(70); }
+  };
+  return done;
+}
+
+async function showHatch(pet) {
+  const egg = isUrl(S.eggImg) ? art('🥚', S.eggImg, 170, { mode: 'still', frame: Math.max(0, (S.rules.hatch || 5) - 2) }) : '🥚';
+  const p = modal(`<div class="big shake" id="hatchEgg">${egg}</div><h2 id="hatchT">蛋在動了…！</h2><p id="hatchP">&nbsp;</p>
+    <div id="hatchName" style="display:none"><div class="field"><input id="petName" maxlength="10" placeholder="幫牠取個名字（可以之後再取）"></div>
+    <button class="btn full" data-close="name">就這樣決定！</button></div>`);
+  if (isUrl(S.eggImg)) {
+    await sleep(1000);
+    const el = $('#hatchEgg .spr');
+    if (el && el._frames > 1) { $('#hatchEgg').classList.remove('shake'); setFrame(el, el._frames - 1); $('#hatchT').textContent = '要出來了！'; }
+    await sleep(900);
+  } else await sleep(1600);
+  flash(); confetti(46);
+  $('#hatchEgg').classList.remove('shake'); $('#hatchEgg').classList.add('popin');
+  $('#hatchEgg').innerHTML = petGlyph(pet.emoji, pet.img, pet.hue, 130); hydrate($('#sheet'));
+  $('#hatchT').innerHTML = `孵出了「${esc(pet.speciesName)}」！${pet.rarity === '稀有' ? ' <span class="tag rare">稀有</span>' : ''}`;
+  $('#hatchP').textContent = pet.intro || '';
+  $('#hatchName').style.display = 'block';
+  await p;
+  const name = ($('#petName') || {}).value || '';
+  if (name.trim()) { const j = await api('rename', { name: name.trim() }); if (j.ok) NEWER = j.state; }
+}
+
+async function askName() {
+  const r = await modal(`<div class="big">${petGlyph(S.pet.emoji, S.pet.img, S.pet.hue, 110)}</div><h2>幫牠取名字</h2><div class="field"><input id="petName" maxlength="10" value="${esc(S.pet.name)}" placeholder="最多 10 個字"></div><div class="btns"><button class="btn ghost" data-close="no">取消</button><button class="btn" data-close="ok">確定</button></div>`);
+  const name = $('#petName').value.trim();
+  if (r === 'ok' && name) { const j = await api('rename', { name }); if (j.ok) { S = j.state; render(); toast('取好名字了：' + name); } else toast(j.error); }
+}
+
+async function askLeave() {
+  const r = await modal(`<div class="big">🛸</div><h2>今天要請假嗎？</h2><p>寵物會進入太空膠囊：不會餓、不會長大，連續天數也會凍結，回來接著算。</p><div class="btns"><button class="btn ghost" data-close="no">不用</button><button class="btn" data-close="ok">確定請假</button></div>`);
+  if (r !== 'ok') return;
+  const j = await api('leave'); if (!j.ok) return toast(j.error);
+  S = j.state; render(); playEvents(j.events);
+}
+
+async function equip(code) {
+  const it = itemByCode(code); if (!it) return;
+  const on = code === S.me.equipAcc || code === S.me.equipBg;
+  const j = await api('equip', on ? { clear: true, type: it.type } : { code });
+  if (!j.ok) return toast(j.error);
+  S = j.state; render(); toast(on ? '取下「' + it.name + '」' : '換上「' + it.name + '」');
+}
+
+/* ---------- 卓木樹 ---------- */
+function renderTree() {
+  if (!S || S.me.status !== '啟用') { $('#tab-tree').innerHTML = ''; return; }
+  const t = S.tree, st = t.stages[t.stage] || { name: '', emoji: '🌳' }, last = t.stage >= t.stages.length - 1;
+  const size = isUrl(st.img) ? ([150, 170, 190, 220, 230, 230][t.stage] || 230) : ([64, 84, 104, 124, 160, 172, 150][t.stage] || 150);
+  const notYet = S.team.filter(m => !m.fed && !m.leave), leaveN = S.team.filter(m => m.leave).length, fedN = S.team.filter(m => m.fed).length;
+  let todayMsg;
+  if (!S.today.workday) todayMsg = '今天是休息日 🌴';
+  else if (t.grewToday) todayMsg = '🎉 今天全員準時，卓木樹已經長大了！';
+  else if (nowMinTaipei() > hm(S.today.deadline)) todayMsg = '今天沒能全員準時，明天再一起努力！';
+  else todayMsg = `還在路上：${notYet.map(m => esc(m.name)).join('、') || '—'}<br><small style="color:var(--muted)">提醒他們 ${esc(S.today.deadline)} 前到喔！</small>`;
+  $('#tab-tree').innerHTML = `
+    <div class="treebox"><div class="ground"></div><div class="treeE" style="font-size:${size}px${last && isUrl(st.img) ? ';animation:none' : ''}">${art(st.emoji, st.img, last && isUrl(st.img) ? 230 : size, last ? { mode: 'still', frame: 'last' } : {})}</div></div>
+    <div class="namebar"><h2>卓木樹・${esc(st.name)}</h2><div class="sub">${esc(st.desc || '')}</div></div>
+    ${last ? `<button class="btn ghost full" style="margin:6px 0" onclick="showTableStory(S.tree.stages[S.tree.stages.length-1].img, S.tree.stages[S.tree.stages.length-1].emoji)">📜 重看卓木桌的故事</button>` : `<div class="dots">${Array.from({ length: t.need }, (_, i) => `<i class="${i < t.progress ? 'on' : ''}"></i>`).join('')}</div><div class="sub center">再 ${t.need - t.progress} 天全員準時，就會長成「${esc((t.stages[t.stage + 1] || {}).name || '')}」</div>`}
+    <div class="card"><h3>今天 <small>${fedN} 人已領・${leaveN} 人請假・共 ${S.team.length} 人</small></h3><div style="font-size:14px;line-height:1.7">${todayMsg}</div></div>
+    <div class="card"><h3>成長之路 <small>全員準時累積 ${t.total} 天</small></h3>
+      <div class="path">${t.stages.map((s, i) => `<div class="${i <= t.stage ? 'done' : ''} ${i === t.stage ? 'cur' : ''}"><b>${art(s.emoji, s.img, 26, i === t.stages.length - 1 ? { mode: 'still', frame: 'last' } : { mode: 'still' })}</b>${esc(s.name)}</div>`).join('')}</div>
+    </div>
+    <div class="card motto"><b>不同腦袋，同一張桌。</b><span>Different minds. One table.</span></div>`;
+}
+
+/* ---------- 圖鑑 ---------- */
+function renderDex() {
+  if (!S || S.me.status !== '啟用') { $('#tab-dex').innerHTML = ''; return; }
+  const found = S.dex.filter(d => d.found).length;
+  $('#tab-dex').innerHTML = `
+    <div class="card center"><h3 style="justify-content:center">📖 卓木島圖鑑</h3><div style="font-size:28px;font-weight:900;color:var(--sea)">${found} <small style="font-size:14px;color:var(--muted)">/ ${S.dex.length} 種</small></div><div class="bar"><i style="width:${Math.round(found / Math.max(1, S.dex.length) * 100)}%"></i></div><div class="sub">全團隊一起收集，孵出新物種就會解鎖</div></div>
+    <div class="dex">${S.dex.map(d => `<div class="dx ${d.found ? '' : 'lock'}" ${d.found ? `onclick="toast('${esc(d.name)}：${esc(d.intro || '')}')"` : ''}>
+      ${d.rarity === '稀有' ? '<span class="r">✨</span>' : ''}
+      <div class="e">${petGlyph(d.emoji, d.img, 0, 52)}</div>
+      <div class="n">${d.found ? esc(d.name) : '？？？'}</div>
+      <div class="o">${d.found ? esc(d.owners.join('、')) : (d.rarity === '稀有' ? '稀有物種' : '')}</div></div>`).join('')}</div>`;
+}
+
+/* ---------- 排行 ---------- */
+function renderRank() {
+  if (!S || S.me.status !== '啟用') { $('#tab-rank').innerHTML = ''; return; }
+  const list = S.board[RANK] || [], medal = ['🥇', '🥈', '🥉'];
+  $('#tab-rank').innerHTML = `
+    <div class="seg"><button class="${RANK === 'streak' ? 'on' : ''}" onclick="RANK='streak';renderRank()">🔥 連續準時</button><button class="${RANK === 'total' ? 'on' : ''}" onclick="RANK='total';renderRank()">🍖 累積準時</button></div>
+    <div class="card">${list.map((r, i) => `<div class="row"><div class="rk">${r.value > 0 && i < 3 ? medal[i] : i + 1}</div>${avatar(r.name, r.picture)}<div class="nm">${esc(r.name)}${r.away ? ' <small style="color:var(--muted)">🧳離家中</small>' : ''}</div><div class="pe">${petGlyph(r.petEmoji, r.petImg, r.petHue, 28)}</div><div class="v">${r.value}<small> 天</small></div></div>`).join('') || '<div class="empty">還沒有資料</div>'}</div>
+    <div class="sub center">${RANK === 'streak' ? '漏一個出勤日就歸零，請假不會中斷' : '從加入到現在，所有準時領飼料的天數'}</div>`;
+}
+
+/* ---------- 管理 ---------- */
+let ADMIN_DATE = null;
+function workdayOf(d) {
+  const o = (S.admin.calendar || []).find(c => c.date === d);
+  if (o) return { work: o.work, why: '已手動設定' };
+  const w = new Date(d + 'T12:00:00+08:00').getDay();
+  return { work: w >= 1 && w <= 5, why: w >= 1 && w <= 5 ? '平日預設' : '週末預設' };
+}
+function renderAdmin() {
+  const el = $('#tab-admin');
+  if (!S || !S.admin) { el.innerHTML = ''; return; }
+  const A = S.admin; ADMIN_DATE = ADMIN_DATE || S.today.date;
+  const wd = workdayOf(ADMIN_DATE);
+  const wk = ['日', '一', '二', '三', '四', '五', '六'][new Date(ADMIN_DATE + 'T12:00:00+08:00').getDay()];
+  el.innerHTML = `
+    <div class="card"><h3>📍 打卡地點 <small>範圍內才能領飼料</small></h3>
+      ${A.places.length ? A.places.map(p => `<div class="place"><div class="nm"><b>${esc(p.name)}</b><small>範圍 ${p.radius} 公尺・${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</small></div><button class="sw ${p.on ? 'on' : ''}" onclick="togglePlace('${esc(p.name)}',${!p.on})"></button></div>`).join('') : '<div class="empty">還沒有地點，請到現場按下面的按鈕設定</div>'}
+      <button class="btn full" style="margin-top:10px" onclick="addPlace()">📍 把我現在的位置設為打卡地點</button>
+    </div>
+    <div class="card"><h3>📅 出勤日 <small>週一到五預設要打卡</small></h3>
+      <div class="field"><input type="date" value="${ADMIN_DATE}" onchange="ADMIN_DATE=this.value;renderAdmin()"></div>
+      <div class="daystat">週${wk}：${wd.work ? '✅ 要領飼料' : '🌴 不用領飼料'} <small style="color:var(--muted);font-weight:400">（${wd.why}）</small></div>
+      <div class="btns"><button class="btn ${wd.work ? '' : 'ghost'}" onclick="setWorkday(true)">要打卡</button><button class="btn ${wd.work ? 'ghost' : ''}" onclick="setWorkday(false)">不用打卡</button></div>
+    </div>
+    <div class="card"><h3>🙋 待核准島民 <small>${A.pending.length} 位</small></h3>
+      ${A.pending.length ? A.pending.map(m => `<div class="place">${avatar(m.name, m.picture)}<div class="nm"><b>${esc(m.name)}</b></div><button class="btn ghost" onclick="approve('${esc(m.userId)}',false)">拒絕</button><button class="btn" onclick="approve('${esc(m.userId)}',true)">核准</button></div>`).join('') : '<div class="empty">目前沒有</div>'}
+    </div>
+    <div class="sub center" style="margin-bottom:16px">其他規則（準時時間、孵化次數、物種圖片…）請到 Google 試算表的「設定」調整</div>`;
+}
+async function adminCall(action, payload, okMsg) {
+  const j = await api(action, payload);
+  if (!j.ok) return toast(j.error);
+  S = j.state; render(); if (okMsg) toast(okMsg);
+}
+async function addPlace() {
+  let pos;
+  try { toast('📍 定位中…', 1500); pos = await getPos(); } catch (e) { return toast(e.message); }
+  const r = await modal(`<div class="big" style="font-size:64px">📍</div><h2>設定打卡地點</h2><p>目前位置誤差約 ${Math.round(pos.acc)} 公尺</p>
+    <div class="field" style="text-align:left">地點名稱<input id="plName" value="公司" maxlength="20"></div>
+    <div class="field" style="text-align:left">範圍（公尺，建議 150～200）<input id="plR" type="number" value="200" min="30" max="2000"></div>
+    <label style="display:flex;gap:8px;align-items:center;font-size:14px;margin:10px 0;text-align:left"><input type="checkbox" id="plOnly"> 只啟用這個地點（其他地點先關掉）</label>
+    <div class="btns"><button class="btn ghost" data-close="no">取消</button><button class="btn" data-close="ok">儲存</button></div>`);
+  if (r !== 'ok') return;
+  adminCall('admin_addPlace', { name: $('#plName').value, radius: +$('#plR').value, only: $('#plOnly').checked, lat: pos.lat, lng: pos.lng }, '地點已更新，馬上生效');
+}
+function togglePlace(name, on) { adminCall('admin_togglePlace', { name, on }, on ? '已啟用「' + name + '」' : '已關閉「' + name + '」'); }
+function setWorkday(work) { adminCall('admin_setWorkday', { date: ADMIN_DATE, work }, ADMIN_DATE + (work ? ' 設為要打卡' : ' 設為不用打卡')); }
+function approve(userId, ok) { adminCall('admin_approve', { userId, approve: ok }, ok ? '已核准，對方拿到一顆蛋了' : '已拒絕'); }
+
+/* =============================================================
+ * 示範模式（還沒填 LIFF_ID / GAS_URL 時自動啟用，資料都是假的）
+ * ============================================================= */
+const DEMO_SPECIES = [['crab', '椰子蟹', '🦀', '普通'], ['turtle', '小海龜', '🐢', '普通'], ['otter', '海獺', '🦦', '普通'], ['puffin', '海鸚', '🐦', '普通'], ['capybara', '水豚', '🦫', '普通'], ['hedgehog', '刺蝟', '🦔', '普通'], ['fox', '狐狸', '🦊', '普通'], ['owl', '貓頭鷹', '🦉', '普通'], ['mushroom', '蘑菇精', '🍄', '普通'], ['lizard', '火山小蜥蜴', '🦎', '普通'], ['sheep', '雲朵羊', '🐑', '普通'], ['jelly', '星星水母', '🪼', '普通'], ['dragon', '珊瑚龍', '🐉', '稀有'], ['whale', '月光鯨', '🐋', '稀有']];
+const DEMO_ITEMS = [['acc_bow', '蝴蝶結', '🎀', '配件'], ['acc_hat', '紳士帽', '🎩', '配件'], ['acc_crown', '小皇冠', '👑', '配件'], ['acc_glasses', '墨鏡', '🕶️', '配件'], ['acc_flower', '小花', '🌸', '配件'], ['bg_sunset', '夕陽海灘', '🌅', '背景'], ['bg_stars', '星空', '🌌', '背景'], ['bg_volcano', '火山', '🌋', '背景'], ['bg_palm', '椰林', '🌴', '背景']];
+const DEMO_TREE = [['種子', '🌰', '大家一起種下的種子'], ['嫩芽', '🌱', '冒出了第一片葉子'], ['幼苗', '🌿', '慢慢站穩了'], ['小樹', '🪴', '開始有樹的樣子了'], ['大樹', '🌳', '可以在樹下乘涼了'], ['結果', '🍊', '結出了果實'], ['卓木桌', '🪵', '樹的木頭做成了同一張桌——不同腦袋，同一張桌。']];
+const STAGES = ['蛋', '幼年', '成長', '成熟', '完全體'];
+
+const DEMO_IMG = { owl: { '幼年': 'images/owl_1.png', '成長': 'images/owl_2.png', '成熟': 'images/owl_3.png', '完全體': 'images/owl_4.png', '畢業': 'images/owl_4.png', grad: 'images/owl_grad.png' }, egg: 'images/egg.png' };
+const DEMO_TREE_IMG = ['images/tree_0.png', 'images/tree_1.png', 'images/tree_2.png', 'images/tree_3.png', 'images/tree_4.png', 'images/tree_5.png', 'images/zomu_table.png'];
+function demoPet(code, stage, progress, name = '', hue = 0) {
+  const s = DEMO_SPECIES.find(x => x[0] === code) || ['', '', '🥚', ''];
+  const img = stage === '蛋' ? DEMO_IMG.egg : ((DEMO_IMG[code] || {})[stage] || '');
+  return { id: 'P1', species: stage === '蛋' ? '' : code, speciesName: stage === '蛋' ? '' : s[1], rarity: s[3], intro: '和誰都處得來的佛系島民', emoji: stage === '蛋' ? '🥚' : s[2], img, hue, stage, progress, need: stage === '蛋' ? 5 : 20, total: 0, name, hatched: '', graduated: '', graduateImg: (DEMO_IMG[code] || {}).grad || '' };
+}
+function demoState(v) {
+  const today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+  const team = [['阿堯', 'otter'], ['小美', 'fox'], ['大熊', 'turtle'], ['阿哲', 'owl'], ['小魚', 'jelly']].map(([n, c], i) => ({ userId: 'U' + i, name: n, picture: '', fed: i === 1 || i === 2, leave: i === 4, away: false, petEmoji: DEMO_SPECIES.find(x => x[0] === c)[2], petImg: '', petHue: 0 }));
+  const st = {
+    me: { userId: 'U0', name: '阿堯', picture: '', status: '啟用', role: '管理員', streak: 4, best: 12, total: 27, miss: 0, away: false, homeProgress: 0, items: ['acc_bow', 'bg_sunset'], equipAcc: 'acc_bow', equipBg: '', fedToday: false, leaveToday: false },
+    pet: demoPet('owl', '成長', 13, '咕咕'),
+    graduates: [demoPet('otter', '畢業', 20, '阿獺')],
+    today: { date: today, weekday: ['週日', '週一', '週二', '週三', '週四', '週五', '週六'][new Date(today + 'T12:00:00+08:00').getDay()], workday: true, deadline: '08:30', beforeDeadline: true },
+    rules: { hatch: 5, evolve: 20, awayLimit: 3, homeNeed: 3, itemEvery: 5, rareAt: 20 },
+    items: DEMO_ITEMS.map(([code, name, symbol, type]) => ({ code, name, symbol, type, img: '' })),
+    tree: { stage: 2, progress: 3, need: 5, total: 13, grewToday: false, stages: DEMO_TREE.map(([name, emoji, desc], i) => ({ name, emoji, img: DEMO_TREE_IMG[i] || '', desc })) },
+    team,
+    dex: DEMO_SPECIES.map(([code, name, emoji, rarity]) => { const owners = { otter: ['阿堯'], fox: ['小美'], turtle: ['大熊'], owl: ['阿哲'], jelly: ['小魚'], capybara: ['阿堯'] }[code] || []; return { code, name, emoji, img: '', rarity, intro: '卓木島的島民', found: owners.length > 0, owners }; }),
+    board: null,
+    awayImg: 'images/away.png', eggImg: DEMO_IMG.egg, eggStages: ['images/egg_1.png', 'images/egg_2.png', 'images/egg_3.png', 'images/egg_4.png'],
+    admin: { places: [{ name: '公司', lat: 25.04123, lng: 121.56456, radius: 200, on: true }], pending: [{ userId: 'U9', name: '新朋友', picture: '' }], calendar: [] }
+  };
+  const me = st.me;
+  if (v === 'egg') { st.pet = demoPet('', '蛋', 4); me.streak = 4; }
+  if (v === 'baby') st.pet = demoPet('owl', '幼年', 6, '咕咕');
+  if (v === 'adult') st.pet = demoPet('owl', '成熟', 19, '咕咕');
+  if (v === 'final') { st.pet = demoPet('owl', '完全體', 8, '咕咕博士'); me.equipAcc = 'acc_bow'; me.equipBg = 'bg_sunset'; }
+  if (v === 'hungry') { me.miss = 1; me.streak = 0; }
+  if (v === 'sad') { me.miss = 2; me.streak = 0; }
+  if (v === 'away') { me.away = true; me.miss = 3; me.streak = 0; me.homeProgress = 1; }
+  if (v === 'capsule') me.leaveToday = true;
+  if (v === 'pending') { me.status = '待核准'; st.admin = null; }
+  if (v === 'grad') st.pet = demoPet('owl', '完全體', 19, '咕咕博士');
+  if (v === 'tree') { st.tree.stage = 5; st.tree.progress = 4; team[3].fed = true; }
+  team[0].fed = me.fedToday; team[0].leave = me.leaveToday; team[0].away = me.away; team[0].petEmoji = st.pet.emoji;
+  demoBoard(st);
+  return st;
+}
+function demoBoard(st) {
+  const vals = { '阿堯': [st.me.streak, st.me.total], '小美': [18, 41], '大熊': [9, 35], '阿哲': [2, 22], '小魚': [6, 30] };
+  const rows = st.team.map(m => ({ name: m.name, picture: '', petEmoji: m.petEmoji, petImg: '', petHue: 0, away: m.away, s: vals[m.name][0], t: vals[m.name][1] }));
+  st.board = {
+    streak: rows.slice().sort((a, b) => b.s - a.s).map(r => Object.assign({}, r, { value: r.s })),
+    total: rows.slice().sort((a, b) => b.t - a.t).map(r => Object.assign({}, r, { value: r.t }))
+  };
+}
+function startDemo() {
+  $('#demoBar').style.display = 'flex';
+  const sel = $('#demoSel');
+  sel.onchange = () => { $('#mask').classList.remove('show'); S = demoState(sel.value); TAB = 'home'; render(); };
+  sel.value = 'egg'; S = demoState('egg'); render();
+}
+function mockApi(action, p) {
+  const st = JSON.parse(JSON.stringify(PENDING || S)), me = st.me, ev = [];
+  const fail = msg => ({ ok: false, error: msg });
+  if (action === 'claim') {
+    if (me.fedToday) return fail('今天已經領過飼料了');
+    me.fedToday = true; me.streak++; me.total++; me.best = Math.max(me.best, me.streak); me.miss = 0;
+    if (me.away) {
+      me.homeProgress++;
+      if (me.homeProgress >= st.rules.homeNeed) { me.away = false; me.homeProgress = 0; ev.push({ type: 'home', pet: st.pet }); }
+      else ev.push({ type: 'awayFeed', progress: me.homeProgress, need: st.rules.homeNeed });
+    } else {
+      const pet = st.pet; ev.push({ type: 'feed' }); pet.progress++; pet.total++;
+      if (pet.progress >= pet.need) {
+        if (pet.stage === '蛋') {
+          const s = DEMO_SPECIES.find(x => x[0] === 'owl');   // 示範模式固定孵出貓頭鷹
+          Object.assign(pet, { species: s[0], speciesName: s[1], emoji: s[2], rarity: s[3], stage: '幼年', progress: 0, need: 20, hue: [0, 0, 30, 160, 280][Math.floor(Math.random() * 5)], intro: '剛剛孵化的新島民', img: (DEMO_IMG[s[0]] || {})['幼年'] || '' });
+          ev.push({ type: 'hatch', pet: JSON.parse(JSON.stringify(pet)) });
+          const d = st.dex.find(x => x.code === s[0]); if (d) { d.found = true; if (!d.owners.includes('阿堯')) d.owners.push('阿堯'); }
+        } else if (pet.stage === '完全體') {
+          const g = JSON.parse(JSON.stringify(pet)); g.stage = '畢業'; st.graduates.push(g);
+          st.pet = demoPet('', '蛋', 0); ev.push({ type: 'graduate', pet: g });
+        } else {
+          const from = pet.stage; pet.stage = STAGES[STAGES.indexOf(from) + 1]; pet.progress = 0; pet.img = (DEMO_IMG[pet.species] || {})[pet.stage] || '';
+          ev.push({ type: 'evolve', from, to: pet.stage, pet: JSON.parse(JSON.stringify(pet)) });
+        }
+      }
+    }
+    if (me.streak % st.rules.itemEvery === 0) {
+      const it = st.items.find(i => i.type === '配件' && !me.items.includes(i.code));
+      if (it) { me.items.push(it.code); me.equipAcc = it.code; ev.push({ type: 'item', item: it, streak: me.streak }); }
+    }
+    st.team[0].fed = true; st.team[0].petEmoji = st.pet.emoji;
+    if (st.team.every(m => m.fed || m.leave)) {
+      st.tree.progress++; st.tree.total++; st.tree.grewToday = true;
+      let up = false; if (st.tree.progress >= st.tree.need && st.tree.stage < st.tree.stages.length - 1) { st.tree.stage++; st.tree.progress = 0; up = true; }
+      const s = st.tree.stages[st.tree.stage]; ev.push({ type: 'tree', up, stage: st.tree.stage, name: s.name, emoji: s.emoji, img: s.img });
+    }
+    demoBoard(st);
+  } else if (action === 'leave') { me.leaveToday = true; st.team[0].leave = true; ev.push({ type: 'leave' }); }
+  else if (action === 'rename') st.pet.name = p.name;
+  else if (action === 'equip') {
+    if (p.clear) { if (p.type === '背景') me.equipBg = ''; else me.equipAcc = ''; }
+    else { const it = st.items.find(i => i.code === p.code); if (it.type === '背景') me.equipBg = it.code; else me.equipAcc = it.code; }
+  } else if (action === 'admin_addPlace') {
+    if (p.only) st.admin.places.forEach(x => x.on = false);
+    const ex = st.admin.places.find(x => x.name === p.name);
+    const np = { name: p.name || '現場', lat: p.lat, lng: p.lng, radius: p.radius || 200, on: true };
+    if (ex) Object.assign(ex, np); else st.admin.places.push(np);
+  } else if (action === 'admin_togglePlace') { const x = st.admin.places.find(x => x.name === p.name); if (x) x.on = p.on; }
+  else if (action === 'admin_setWorkday') { st.admin.calendar = st.admin.calendar.filter(c => c.date !== p.date); st.admin.calendar.push({ date: p.date, work: p.work, note: '' }); if (p.date === st.today.date) st.today.workday = p.work; }
+  else if (action === 'admin_approve') st.admin.pending = st.admin.pending.filter(x => x.userId !== p.userId);
+  return { ok: true, events: ev, state: st };
+}
+
+boot();
+</script>
+</body>
+</html>
